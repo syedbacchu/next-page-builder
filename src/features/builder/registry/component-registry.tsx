@@ -1,0 +1,151 @@
+import type { ComponentType } from "react";
+
+import { Button } from "@/features/builder/components/basic/Button";
+import { Heading } from "@/features/builder/components/basic/Heading";
+import { Image } from "@/features/builder/components/basic/Image";
+import { Text } from "@/features/builder/components/basic/Text";
+import type { BuilderNodeType } from "@/features/builder/types/builder.types";
+import type { BuilderComponentProps } from "@/features/builder/types/component.types";
+import type { ComponentSchema } from "@/features/builder/types/component-schema.types";
+export interface BuilderComponentDefinition {
+    type: BuilderNodeType;
+    label: string;
+    category: string;
+    canHaveChildren: boolean;
+    component: ComponentType<BuilderComponentProps>;
+    schema?: ComponentSchema;
+}
+
+export const componentRegistry: Record<
+    BuilderNodeType,
+    BuilderComponentDefinition
+> = {
+    page: {
+        type: "page",
+        label: "Page",
+        category: "layout",
+        canHaveChildren: true,
+        component: ({ children }) => <>{children}</>,
+    },
+
+    section: {
+        type: "section",
+        label: "Section",
+        category: "layout",
+        canHaveChildren: true,
+        component: ({ children }) => <section>{children}</section>,
+    },
+
+    container: {
+        type: "container",
+        label: "Container",
+        category: "layout",
+        canHaveChildren: true,
+        component: ({ children }) => <div>{children}</div>,
+    },
+
+    heading: {
+        type: "heading",
+        label: "Heading",
+        category: "basic",
+        canHaveChildren: false,
+        component: Heading,
+
+        schema: {
+            text: {
+                type: "text",
+                label: "Text",
+                source: "props",
+                defaultValue: "Heading",
+            },
+
+            level: {
+                type: "select",
+                label: "Heading Level",
+                source: "props",
+                defaultValue: 2,
+                options: [
+                    { label: "H1", value: 1 },
+                    { label: "H2", value: 2 },
+                    { label: "H3", value: 3 },
+                    { label: "H4", value: 4 },
+                    { label: "H5", value: 5 },
+                    { label: "H6", value: 6 },
+                ],
+            },
+            color: {
+                type: "color",
+                label: "Text Color",
+                source: "styles",
+                defaultValue: "#111827",
+            },
+
+            backgroundColor: {
+                type: "color",
+                label: "Background Color",
+                source: "styles",
+                defaultValue: "transparent",
+            },
+        },
+    },
+
+    text: {
+        type: "text",
+        label: "Text",
+        category: "basic",
+        canHaveChildren: false,
+        component: Text,
+
+        schema: {
+            text: {
+                type: "textarea",
+                label: "Text",
+                defaultValue: "Lorem ipsum dolor sit amet.",
+            },
+        },
+    },
+
+    image: {
+        type: "image",
+        label: "Image",
+        category: "basic",
+        canHaveChildren: false,
+        component: Image,
+
+        schema: {
+            src: {
+                type: "image",
+                label: "Image",
+                defaultValue: "https://placehold.co/600x400",
+            },
+
+            alt: {
+                type: "text",
+                label: "Alt Text",
+                defaultValue: "Image",
+            },
+        },
+    },
+
+    button: {
+        type: "button",
+        label: "Button",
+        category: "basic",
+        canHaveChildren: false,
+        component: Button,
+
+        schema: {
+            text: {
+                type: "text",
+                label: "Button Text",
+                defaultValue: "Button",
+            },
+
+            href: {
+                type: "url",
+                label: "Link",
+                defaultValue: "#",
+            },
+        },
+    },
+};
