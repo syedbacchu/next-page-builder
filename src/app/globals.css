@@ -37,3 +37,34 @@ body {
   outline: 2px solid #2563eb;
   outline-offset: -2px;
 }
+
+.builder-drop-indicator {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: #2563eb;
+  pointer-events: none;
+  z-index: 9998;
+}
+
+.builder-drop-indicator-before {
+  top: 0;
+}
+
+.builder-drop-indicator-after {
+  bottom: 0;
+}
+
+.builder-drop-indicator-inside {
+  inset: 0;
+  height: auto;
+  background: transparent;
+  border: 2px solid #2563eb;
+}
+.builder-node-dragging {
+  opacity: 0.45;
+}
+.builder-node-drop-invalid {
+  cursor: not-allowed;
+}

@@ -35,9 +35,11 @@ export function duplicateNode(
 
                 duplicatedNode = copy;
                 children.push(copy);
-            } else {
-                children[children.length - 1] = processNode(child);
+
+                continue;
             }
+
+            children[children.length - 1] = processNode(child);
         }
 
         return {

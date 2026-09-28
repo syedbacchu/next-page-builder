@@ -64,10 +64,19 @@ export function BuilderSidebar() {
                     <button
                         key={component.type}
                         type="button"
-                        onClick={() =>
-                            handleAddComponent(component.type)
-                        }
-                        className="flex w-full items-center rounded-md border px-3 py-2 text-left text-sm hover:bg-gray-50"
+                        draggable
+                        className="flex w-full items-center rounded-md border border-slate-200 bg-white px-3 py-2 text-left text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+                        onDragStart={(event) => {
+                            event.stopPropagation();
+
+                            event.dataTransfer.effectAllowed = "copy";
+
+                            event.dataTransfer.setData(
+                                "application/x-builder-component",
+                                component.type,
+                            );
+                        }}
+                        onClick={() => handleAddComponent(component.type)}
                     >
                         {component.label}
                     </button>

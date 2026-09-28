@@ -4,6 +4,7 @@ import { SelectedNodeInspector } from "@/features/builder/components/SelectedNod
 import { BuilderCanvas } from "@/features/builder/components/BuilderCanvas";
 import {BuilderSidebar} from "@/features/builder/components/BuilderSidebar";
 import { BuilderKeyboardShortcuts } from "@/features/builder/components/BuilderKeyboardShortcuts";
+import { BuilderHeader } from "@/features/builder/components/BuilderHeader";
 
 const testDocument: BuilderDocument = {
     id: "page-1",
@@ -74,12 +75,17 @@ export default function BuilderTestPage() {
     return (
         <BuilderProvider document={testDocument}>
             <BuilderKeyboardShortcuts />
-            <div className="flex min-h-screen">
-                <BuilderSidebar />
 
-                <BuilderCanvas />
+            <div className="flex min-h-screen flex-col">
+                <BuilderHeader />
 
-                <SelectedNodeInspector />
+                <div className="flex min-h-0 flex-1">
+                    <BuilderSidebar />
+
+                    <BuilderCanvas />
+
+                    <SelectedNodeInspector />
+                </div>
             </div>
         </BuilderProvider>
     );

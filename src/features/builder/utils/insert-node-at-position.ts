@@ -1,23 +1,20 @@
 import type { BuilderNode } from "@/features/builder/types/builder.types";
 
-export function addNodeToParent(
+export function insertNodeAtPosition(
     node: BuilderNode,
     parentId: string,
     newNode: BuilderNode,
-    index?: number,
+    index: number,
 ): BuilderNode {
     if (node.id === parentId) {
         const children = [...node.children];
 
-        if (
-            index !== undefined &&
-            index >= 0 &&
-            index <= children.length
-        ) {
-            children.splice(index, 0, newNode);
-        } else {
-            children.push(newNode);
-        }
+        const safeIndex = Math.max(
+            0,
+            Math.min(index, children.length),
+        );
+
+        children.splice(safeIndex, 0, newNode);
 
         return {
             ...node,
@@ -28,7 +25,7 @@ export function addNodeToParent(
     return {
         ...node,
         children: node.children.map((child) =>
-            addNodeToParent(
+            insertNodeAtPosition(
                 child,
                 parentId,
                 newNode,

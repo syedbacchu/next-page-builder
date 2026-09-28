@@ -12,6 +12,7 @@ export interface BuilderComponentDefinition {
     label: string;
     category: string;
     canHaveChildren: boolean;
+    allowedParentTypes?: BuilderNodeType[];
     component: ComponentType<BuilderComponentProps>;
     schema?: ComponentSchema;
 }
@@ -41,6 +42,7 @@ export const componentRegistry: Record<
         label: "Container",
         category: "layout",
         canHaveChildren: true,
+        allowedParentTypes: ["section", "container"],
         component: ({ children }) => <div>{children}</div>,
     },
 
@@ -49,8 +51,8 @@ export const componentRegistry: Record<
         label: "Heading",
         category: "basic",
         canHaveChildren: false,
+        allowedParentTypes: ["container"],
         component: Heading,
-
         schema: {
             text: {
                 type: "text",

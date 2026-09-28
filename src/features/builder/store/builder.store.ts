@@ -9,6 +9,10 @@ import { findFirstContainer } from "@/features/builder/utils/find-first-containe
 import { deleteNode } from "@/features/builder/utils/delete-node";
 import { duplicateNode } from "@/features/builder/utils/duplicate-node";
 import { moveNodeUp, moveNodeDown } from "@/features/builder/utils/move-node";
+import { findNodePosition } from "@/features/builder/utils/find-node-position";
+import { insertNodeAtPosition } from "@/features/builder/utils/insert-node-at-position";
+import type { DropPosition } from "@/features/builder/types/drop-position.types";
+import { moveNodeToPosition } from "@/features/builder/utils/move-node-to-position";
 
 export interface BuilderHistory {
     past: BuilderDocument[];
@@ -19,6 +23,12 @@ export interface BuilderState {
     document: BuilderDocument;
     selectedNodeId: string | null;
     insertTargetNodeId: string | null;
+
+    drag: {
+        activeNodeId: string | null;
+        dropPosition: DropPosition | null;
+    };
+
     history: BuilderHistory;
 }
 
@@ -45,6 +55,7 @@ export type BuilderAction =
     type: "ADD_NODE";
     parentId: string;
     node: BuilderNode;
+    index?: number;
 }| {
     type: "DELETE_NODE";
     nodeId: string;
@@ -64,6 +75,24 @@ export type BuilderAction =
     type: "UNDO";
 }| {
     type: "REDO";
+}| {
+    type: "ADD_NODE_BEFORE";
+    targetNodeId: string;
+    node: BuilderNode;
+} | {
+    type: "ADD_NODE_AFTER";
+    targetNodeId: string;
+    node: BuilderNode;
+}| {
+    type: "DRAG_START";
+    nodeId: string;
+}| {
+    type: "DRAG_END";
+}| {
+    type: "SET_DROP_POSITION";
+    position: DropPosition;
+}| {
+    type: "DROP_NODE";
 };
 
 export function createInitialBuilderState(
@@ -78,6 +107,10 @@ export function createInitialBuilderState(
         history: {
             past: [],
             future: [],
+        },
+        drag: {
+            activeNodeId: null,
+            dropPosition: null,
         },
     };
 }
@@ -131,7 +164,12 @@ export function builderReducer(
                 ...commitDocument(state, {
                     ...state.document,
                     children: state.document.children.map((child) =>
-                        addNodeToParent(child, action.parentId, action.node),
+                        addNodeToParent(
+                            child,
+                            action.parentId,
+                            action.node,
+                            action.index,
+                        ),
                     ),
                 }),
                 selectedNodeId: action.node.id,
@@ -218,6 +256,127 @@ export function builderReducer(
                         state.document,
                     ],
                     future: state.history.future.slice(1),
+                },
+            };
+        }
+        case "ADD_NODE_BEFORE": {
+            const position = findNodePosition(
+                state.document,
+                action.targetNodeId,
+            );
+
+            if (!position) {
+                return state;
+            }
+
+            const document = {
+                ...state.document,
+                children: state.document.children.map((child) =>
+                    insertNodeAtPosition(
+                        child,
+                        position.parentId,
+                        action.node,
+                        position.index,
+                    ),
+                ),
+            };
+
+            return {
+                ...commitDocument(state, document),
+                selectedNodeId: action.node.id,
+            };
+        }
+        case "ADD_NODE_AFTER": {
+            const position = findNodePosition(
+                state.document,
+                action.targetNodeId,
+            );
+
+            if (!position) {
+                return state;
+            }
+
+            const document = {
+                ...state.document,
+                children: state.document.children.map((child) =>
+                    insertNodeAtPosition(
+                        child,
+                        position.parentId,
+                        action.node,
+                        position.index + 1,
+                    ),
+                ),
+            };
+
+            return {
+                ...commitDocument(state, document),
+                selectedNodeId: action.node.id,
+            };
+        }
+        case "DRAG_START":
+            return {
+                ...state,
+                drag: {
+                    activeNodeId: action.nodeId,
+                    dropPosition: null,
+                },
+            };
+        case "DRAG_END":
+            return {
+                ...state,
+                drag: {
+                    activeNodeId: null,
+                    dropPosition: null,
+                },
+            };
+        case "SET_DROP_POSITION":
+            return {
+                ...state,
+                drag: {
+                    ...state.drag,
+                    dropPosition: action.position,
+                },
+            };
+        case "DROP_NODE": {
+            const { activeNodeId, dropPosition } = state.drag;
+
+            if (!activeNodeId || !dropPosition) {
+                return {
+                    ...state,
+                    drag: {
+                        activeNodeId: null,
+                        dropPosition: null,
+                    },
+                };
+            }
+
+            // Prevent dropping a node onto itself.
+            if (
+                activeNodeId === dropPosition.targetNodeId
+            ) {
+                return {
+                    ...state,
+                    drag: {
+                        activeNodeId: null,
+                        dropPosition: null,
+                    },
+                };
+            }
+
+            const newDocument = moveNodeToPosition(
+                state.document,
+                activeNodeId,
+                dropPosition,
+            );
+
+            return {
+                ...commitDocument(state, newDocument),
+
+                selectedNodeId: activeNodeId,
+
+                drag: {
+                    activeNodeId: null,
+                    dropPosition: null,
                 },
             };
         }
