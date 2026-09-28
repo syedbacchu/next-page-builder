@@ -14,6 +14,19 @@ export function BuilderSidebar() {
     );
 
     function handleAddComponent(type: BuilderNodeType) {
+        console.log("INSERT TARGET:", state.insertTargetNodeId);
+        const insertTarget = findNodeById(
+            state.document,
+            state.insertTargetNodeId ?? "",
+        );
+
+        console.log(
+            "INSERT TARGET NODE:",
+            insertTarget?.id,
+            insertTarget?.type,
+        );
+        console.log("SELECTED NODE:", state.selectedNodeId);
+
         if (!state.insertTargetNodeId) {
             console.log("No insert target selected");
             return;

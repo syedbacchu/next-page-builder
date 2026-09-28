@@ -22,7 +22,7 @@ export function BuilderNodeToolbar() {
 
     return (
         <div
-            className="absolute left-0 top-0 z-[9999] flex items-center gap-1 rounded-md border border-gray-300 bg-white p-1 shadow-lg"
+            className="absolute left-0 top-0 z-[9999] rounded-md border bg-white p-1 shadow-lg"
             onClick={(event) => {
                 event.stopPropagation();
             }}

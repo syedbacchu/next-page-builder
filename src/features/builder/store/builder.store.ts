@@ -40,6 +40,9 @@ export type BuilderAction =
 }| {
     type: "DELETE_NODE";
     nodeId: string;
+}| {
+    type: "SET_INSERT_TARGET";
+    nodeId: string;
 };
 
 export function createInitialBuilderState(
@@ -124,6 +127,11 @@ export function builderReducer(
                     ),
                 },
                 selectedNodeId: null,
+            };
+        case "SET_INSERT_TARGET":
+            return {
+                ...state,
+                insertTargetNodeId: action.nodeId,
             };
 
         default:

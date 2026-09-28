@@ -31,6 +31,17 @@ export function BuilderRenderer({
         />
     ));
 
+    console.log(
+        "NODE:",
+        node.id,
+        node.type,
+        "CHILDREN:",
+        node.children.map((child) => ({
+            id: child.id,
+            type: child.type,
+        })),
+    );
+
     const isSelected =
         state.selectedNodeId === node.id;
 
@@ -38,11 +49,32 @@ export function BuilderRenderer({
         <div
             onClick={(event) => {
                 event.stopPropagation();
-                console.log("CLICKED NODE:", node.id);
+
+                console.log(
+                    "NODE CLICK:",
+                    node.id,
+                    node.type,
+                );
+
                 dispatch({
                     type: "SELECT_NODE",
                     nodeId: node.id,
                 });
+
+                if (
+                    node.type === "section" ||
+                    node.type === "container"
+                ) {
+                    console.log(
+                        "UPDATE INSERT TARGET:",
+                        node.id,
+                    );
+
+                    dispatch({
+                        type: "SET_INSERT_TARGET",
+                        nodeId: node.id,
+                    });
+                }
             }}
             className={[
                 "builder-node-wrapper relative",

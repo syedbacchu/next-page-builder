@@ -11,6 +11,10 @@ export function Heading({
     text = "Heading",
     level = 2,
 }: HeadingProps) {
+    console.log("HEADING COMPONENT RENDER:", {
+        text,
+        level,
+    });
     const Tag: ElementType = `h${level}`;
 
     return <Tag>{text}</Tag>;
