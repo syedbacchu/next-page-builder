@@ -15,6 +15,7 @@ import type { DropPosition } from "@/features/builder/types/drop-position.types"
 import { moveNodeToPosition } from "@/features/builder/utils/move-node-to-position";
 import {findNodeById} from "@/features/builder/utils/find-node";
 import {canAddNodeToParent} from "@/features/builder/utils/can-add-node";
+import { canDropNode } from "@/features/builder/utils/can-drop-node";
 
 export interface BuilderHistory {
     past: BuilderDocument[];
@@ -175,6 +176,36 @@ export function builderReducer(
                 return state;
             }
 
+            // Adding directly to the root Page
+            if (action.parentId === state.document.id) {
+                const document = {
+                    ...state.document,
+                    children:
+                        action.index === undefined
+                            ? [
+                                ...state.document.children,
+                                action.node,
+                            ]
+                            : [
+                                ...state.document.children.slice(
+                                    0,
+                                    action.index,
+                                ),
+                                action.node,
+                                ...state.document.children.slice(
+                                    action.index,
+                                ),
+                            ],
+                };
+
+                return {
+                    ...commitDocument(state, document),
+                    selectedNodeId: action.node.id,
+                    insertTargetNodeId: action.node.id,
+                };
+            }
+
+            // Adding to nested node
             const document = {
                 ...state.document,
                 children: state.document.children.map((child) =>
@@ -190,6 +221,7 @@ export function builderReducer(
             return {
                 ...commitDocument(state, document),
                 selectedNodeId: action.node.id,
+                insertTargetNodeId: action.node.id,
             };
         }
         case "DELETE_NODE":
@@ -368,9 +400,13 @@ export function builderReducer(
                 };
             }
 
-            // Prevent dropping a node onto itself.
+            // Final drop validation
             if (
-                activeNodeId === dropPosition.targetNodeId
+                !canDropNode(
+                    state.document,
+                    activeNodeId,
+                    dropPosition,
+                )
             ) {
                 return {
                     ...state,

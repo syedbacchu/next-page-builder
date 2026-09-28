@@ -11,9 +11,11 @@ export function canAddNodeToParent(
         return false;
     }
 
-    if (!definition.allowedParentTypes) {
-        return parent.type !== "page";
+    if (definition.allowedParentTypes) {
+        return definition.allowedParentTypes.includes(
+            parent.type,
+        );
     }
 
-    return definition.allowedParentTypes.includes(parent.type);
+    return parent.type !== "page";
 }

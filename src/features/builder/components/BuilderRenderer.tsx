@@ -7,7 +7,9 @@ import { BuilderNodeToolbar } from "@/features/builder/components/BuilderNodeToo
 import { BuilderDropIndicator } from "@/features/builder/components/BuilderDropIndicator";
 import { findNodeById } from "@/features/builder/utils/find-node";
 import {createBuilderNode} from "@/features/builder/utils/create-node";
-
+import { canDropNode } from "@/features/builder/utils/can-drop-node";
+import {DropPosition} from "@/features/builder/types/drop-position.types";
+import { canDropNewComponent } from "@/features/builder/utils/can-drop-new-component";
 
 interface BuilderRendererProps {
     node: BuilderNode;
@@ -48,22 +50,21 @@ export function BuilderRenderer({
 
     const isSelected =
         state.selectedNodeId === node.id;
-    const isDropTarget =
-        state.drag.dropPosition?.targetNodeId === node.id;
+
     const isDragging =
         state.drag.activeNodeId === node.id;
-    const activeNodeId = state.drag.activeNodeId;
 
-    const activeNode = activeNodeId
-        ? findNodeById(state.document, activeNodeId)
-        : null;
+    const isDropTarget =
+        state.drag.dropPosition?.targetNodeId === node.id;
 
     const isInvalidDropTarget =
-        activeNodeId !== null &&
-        activeNode !== null &&
-        (
-            activeNode.id === node.id ||
-            findNodeById(activeNode, node.id) !== null
+        isDropTarget &&
+        state.drag.activeNodeId !== null &&
+        state.drag.dropPosition !== null &&
+        !canDropNode(
+            state.document,
+            state.drag.activeNodeId,
+            state.drag.dropPosition,
         );
 
     return (
@@ -94,59 +95,81 @@ export function BuilderRenderer({
                     "application/x-builder-component",
                 );
 
-                if (isNewComponentDrag) {
-                    event.dataTransfer.dropEffect = "copy";
-                } else {
-                    event.dataTransfer.dropEffect = "move";
-                }
-
                 const activeNodeId = state.drag.activeNodeId;
 
-                if (activeNodeId) {
-                    const activeNode = findNodeById(
-                        state.document,
-                        activeNodeId,
-                    );
+                event.dataTransfer.dropEffect =
+                    isNewComponentDrag ? "copy" : "move";
+
+                const rect =
+                    event.currentTarget.getBoundingClientRect();
+
+                const offsetY = event.clientY - rect.top;
+
+                const ratio =
+                    rect.height > 0
+                        ? offsetY / rect.height
+                        : 0.5;
+
+                const definition =
+                    componentRegistry[node.type];
+
+                const position: DropPosition = isNewComponentDrag
+                    ? {
+                        type: "inside",
+                        targetNodeId: node.id,
+                    }
+                    : definition.canHaveChildren &&
+                    ratio > 0.25 &&
+                    ratio < 0.75
+                        ? {
+                            type: "inside",
+                            targetNodeId: node.id,
+                        }
+                        : {
+                            type:
+                                ratio < 0.5
+                                    ? "before"
+                                    : "after",
+                            targetNodeId: node.id,
+                        };
+
+                if (isNewComponentDrag) {
+                    const componentType = event.dataTransfer.getData(
+                        "application/x-builder-component",
+                    ) as BuilderNode["type"];
 
                     if (
-                        activeNode &&
-                        (node.id === activeNode.id ||
-                            findNodeById(activeNode, node.id))
+                        !canDropNewComponent(
+                            componentType,
+                            node.type,
+                        )
                     ) {
                         event.dataTransfer.dropEffect = "none";
                         return;
                     }
                 }
-                const rect = event.currentTarget.getBoundingClientRect();
-                const offsetY = event.clientY - rect.top;
-                const ratio = rect.height > 0 ? offsetY / rect.height : 0.5;
+                // Existing node drag validation
+                if (!isNewComponentDrag && activeNodeId) {
+                    if (
+                        !canDropNode(
+                            state.document,
+                            activeNodeId,
+                            position,
+                        )
+                    ) {
+                        event.dataTransfer.dropEffect =
+                            "none";
 
-
-                const definition = componentRegistry[node.type];
-                if (
-                    definition.canHaveChildren &&
-                    ratio > 0.25 &&
-                    ratio < 0.75
-                ) {
-                    dispatch({
-                        type: "SET_DROP_POSITION",
-                        position: {
-                            type: "inside",
-                            targetNodeId: node.id,
-                        },
-                    });
-
-                    return;
+                        return;
+                    }
                 }
 
                 dispatch({
                     type: "SET_DROP_POSITION",
-                    position: {
-                        type: ratio < 0.5 ? "before" : "after",
-                        targetNodeId: node.id,
-                    },
+                    position,
                 });
             }}
+
             onDrop={(event) => {
                 event.preventDefault();
                 event.stopPropagation();
@@ -155,18 +178,13 @@ export function BuilderRenderer({
                     "application/x-builder-component",
                 );
 
+                // New component from Sidebar
                 if (componentType) {
-                    const definition = componentRegistry[
-                        componentType as BuilderNode["type"]
-                        ];
-
-                    if (!definition) {
-                        return;
-                    }
-
                     if (
-                        definition.allowedParentTypes &&
-                        !definition.allowedParentTypes.includes(node.type)
+                        !canDropNewComponent(
+                            componentType as BuilderNode["type"],
+                            node.type,
+                        )
                     ) {
                         return;
                     }
@@ -184,6 +202,7 @@ export function BuilderRenderer({
                     return;
                 }
 
+                // Existing builder node
                 if (state.drag.activeNodeId === node.id) {
                     return;
                 }
@@ -192,6 +211,7 @@ export function BuilderRenderer({
                     type: "DROP_NODE",
                 });
             }}
+
             onDragEnd={(event) => {
                 event.stopPropagation();
 
@@ -232,8 +252,11 @@ export function BuilderRenderer({
                 "builder-node-wrapper relative",
                 isSelected ? "builder-node-selected" : "",
                 isDragging ? "builder-node-dragging" : "",
-                isInvalidDropTarget ? "builder-node-drop-invalid" : "",
-                node.type === "section" || node.type === "container"
+                isInvalidDropTarget
+                    ? "builder-node-drop-invalid"
+                    : "",
+                node.type === "section" ||
+                node.type === "container"
                     ? "builder-layout-node"
                     : "",
             ].join(" ")}
@@ -241,7 +264,9 @@ export function BuilderRenderer({
         >
             {isSelected && <BuilderNodeToolbar />}
 
-            {isDropTarget && <BuilderDropIndicator />}
+            {isDropTarget && !isInvalidDropTarget && (
+                <BuilderDropIndicator />
+            )}
             <Component {...node.props}>
                 {children}
             </Component>

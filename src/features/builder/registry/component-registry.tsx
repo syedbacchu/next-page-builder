@@ -26,6 +26,7 @@ export const componentRegistry: Record<
         label: "Page",
         category: "layout",
         canHaveChildren: true,
+        allowedParentTypes: [],
         component: ({ children }) => <>{children}</>,
     },
 
@@ -34,6 +35,7 @@ export const componentRegistry: Record<
         label: "Section",
         category: "layout",
         canHaveChildren: true,
+        allowedParentTypes: ["page"],
         component: ({ children }) => <section>{children}</section>,
     },
 
@@ -42,7 +44,7 @@ export const componentRegistry: Record<
         label: "Container",
         category: "layout",
         canHaveChildren: true,
-        allowedParentTypes: ["section", "container"],
+        allowedParentTypes: ["section", "page"],
         component: ({ children }) => <div>{children}</div>,
     },
 
@@ -97,6 +99,7 @@ export const componentRegistry: Record<
         category: "basic",
         canHaveChildren: false,
         component: Text,
+        allowedParentTypes: ["container"],
 
         schema: {
             text: {
@@ -113,6 +116,7 @@ export const componentRegistry: Record<
         category: "basic",
         canHaveChildren: false,
         component: Image,
+        allowedParentTypes: ["container"],
 
         schema: {
             src: {
@@ -135,6 +139,7 @@ export const componentRegistry: Record<
         category: "basic",
         canHaveChildren: false,
         component: Button,
+        allowedParentTypes: ["container"],
 
         schema: {
             text: {

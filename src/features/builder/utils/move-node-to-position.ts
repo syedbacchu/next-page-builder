@@ -5,6 +5,7 @@ import type {
 import type { DropPosition } from "@/features/builder/types/drop-position.types";
 import {findNodeById} from "@/features/builder/utils/find-node";
 import { componentRegistry } from "@/features/builder/registry/component-registry";
+import { canDropNode } from "@/features/builder/utils/can-drop-node";
 
 function removeNode(
     node: BuilderNode,
@@ -122,47 +123,8 @@ export function moveNodeToPosition(
         return document;
     }
 
-    const sourceDefinition =
-        componentRegistry[sourceNode.type];
-
-    // Prevent dropping a node inside itself
-    // or one of its descendants.
-    if (
-        position.type === "inside" &&
-        containsNode(sourceNode, position.targetNodeId)
-    ) {
+    if (!canDropNode(document, nodeId, position)) {
         return document;
-    }
-
-    // Validate inside drop target.
-    if (position.type === "inside") {
-        const targetNode = findNodeById(
-            document,
-            position.targetNodeId,
-        );
-
-        if (!targetNode) {
-            return document;
-        }
-
-        const targetDefinition =
-            componentRegistry[targetNode.type];
-
-        // Target must be able to contain children.
-        if (!targetDefinition?.canHaveChildren) {
-            return document;
-        }
-
-        // Source component must be allowed
-        // inside this parent type.
-        if (
-            sourceDefinition?.allowedParentTypes &&
-            !sourceDefinition.allowedParentTypes.includes(
-                targetNode.type,
-            )
-        ) {
-            return document;
-        }
     }
 
     const {

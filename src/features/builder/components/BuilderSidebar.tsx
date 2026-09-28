@@ -5,6 +5,8 @@ import { useBuilder } from "@/features/builder/store/BuilderProvider";
 import { createBuilderNode } from "@/features/builder/utils/create-node";
 import { findNodeById } from "@/features/builder/utils/find-node";
 import type { BuilderNodeType } from "@/features/builder/types/builder.types";
+import {canAddNodeToParent} from "@/features/builder/utils/can-add-node";
+import { findValidParentForComponent } from "@/features/builder/utils/find-valid-parent";
 
 export function BuilderSidebar() {
     const { state, dispatch } = useBuilder();
@@ -14,31 +16,20 @@ export function BuilderSidebar() {
     );
 
     function handleAddComponent(type: BuilderNodeType) {
-        console.log("INSERT TARGET:", state.insertTargetNodeId);
-        const insertTarget = findNodeById(
-            state.document,
-            state.insertTargetNodeId ?? "",
-        );
+        const insertTargetId =
+            state.insertTargetNodeId;
 
-        console.log(
-            "INSERT TARGET NODE:",
-            insertTarget?.id,
-            insertTarget?.type,
-        );
-        console.log("SELECTED NODE:", state.selectedNodeId);
-
-        if (!state.insertTargetNodeId) {
-            console.log("No insert target selected");
+        if (!insertTargetId) {
             return;
         }
 
-        const selectedNode = findNodeById(
+        const parent = findValidParentForComponent(
             state.document,
-            state.insertTargetNodeId,
+            insertTargetId,
+            type,
         );
 
-        if (!selectedNode) {
-            console.log("Insert target node not found");
+        if (!parent) {
             return;
         }
 
@@ -46,7 +37,7 @@ export function BuilderSidebar() {
 
         dispatch({
             type: "ADD_NODE",
-            parentId: selectedNode.id,
+            parentId: parent.id,
             node: newNode,
         });
     }
