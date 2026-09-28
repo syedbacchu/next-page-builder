@@ -14,23 +14,18 @@ export function BuilderSidebar() {
     );
 
     function handleAddComponent(type: BuilderNodeType) {
-        if (!state.selectedNodeId) {
-            console.log("No node selected");
+        if (!state.insertTargetNodeId) {
+            console.log("No insert target selected");
             return;
         }
 
         const selectedNode = findNodeById(
             state.document,
-            state.selectedNodeId,
+            state.insertTargetNodeId,
         );
 
         if (!selectedNode) {
-            console.log("Selected node not found");
-            return;
-        }
-
-        if (!selectedNode.children) {
-            console.log("Selected node cannot have children");
+            console.log("Insert target node not found");
             return;
         }
 

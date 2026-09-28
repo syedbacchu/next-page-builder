@@ -6,10 +6,12 @@ import type {
     BuilderNode,
 } from "@/features/builder/types/builder.types";
 import { findFirstContainer } from "@/features/builder/utils/find-first-container";
+import { deleteNode } from "@/features/builder/utils/delete-node";
 
 export interface BuilderState {
     document: BuilderDocument;
     selectedNodeId: string | null;
+    insertTargetNodeId: string | null;
 }
 
 export type BuilderAction =
@@ -35,6 +37,9 @@ export type BuilderAction =
     type: "ADD_NODE";
     parentId: string;
     node: BuilderNode;
+}| {
+    type: "DELETE_NODE";
+    nodeId: string;
 };
 
 export function createInitialBuilderState(
@@ -44,7 +49,8 @@ export function createInitialBuilderState(
 
     return {
         document,
-        selectedNodeId: firstContainer?.id ?? null,
+        selectedNodeId: null,
+        insertTargetNodeId: firstContainer?.id ?? null,
     };
 }
 
@@ -107,6 +113,17 @@ export function builderReducer(
                     ),
                 },
                 selectedNodeId: action.node.id,
+            };
+        case "DELETE_NODE":
+            return {
+                ...state,
+                document: {
+                    ...state.document,
+                    children: state.document.children.map((child) =>
+                        deleteNode(child, action.nodeId),
+                    ),
+                },
+                selectedNodeId: null,
             };
 
         default:

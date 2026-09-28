@@ -3,6 +3,7 @@
 import { useBuilder } from "@/features/builder/store/BuilderProvider";
 import { componentRegistry } from "@/features/builder/registry/component-registry";
 import type { BuilderNode } from "@/features/builder/types/builder.types";
+import { BuilderNodeToolbar } from "@/features/builder/components/BuilderNodeToolbar";
 
 interface BuilderRendererProps {
     node: BuilderNode;
@@ -44,7 +45,7 @@ export function BuilderRenderer({
                 });
             }}
             className={[
-                "builder-node-wrapper",
+                "builder-node-wrapper relative",
                 isSelected ? "builder-node-selected" : "",
                 node.type === "section" || node.type === "container"
                     ? "builder-layout-node"
@@ -52,6 +53,7 @@ export function BuilderRenderer({
             ].join(" ")}
             style={node.styles}
         >
+            {isSelected && <BuilderNodeToolbar />}
             <Component {...node.props}>
                 {children}
             </Component>
