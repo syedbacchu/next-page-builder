@@ -122,21 +122,21 @@ export function BuilderRenderer({
                 const ratio = rect.height > 0 ? offsetY / rect.height : 0.5;
 
 
+                const definition = componentRegistry[node.type];
                 if (
-                    node.type === "section" ||
-                    node.type === "container"
+                    definition.canHaveChildren &&
+                    ratio > 0.25 &&
+                    ratio < 0.75
                 ) {
-                    if (ratio > 0.25 && ratio < 0.75) {
-                        dispatch({
-                            type: "SET_DROP_POSITION",
-                            position: {
-                                type: "inside",
-                                targetNodeId: node.id,
-                            },
-                        });
+                    dispatch({
+                        type: "SET_DROP_POSITION",
+                        position: {
+                            type: "inside",
+                            targetNodeId: node.id,
+                        },
+                    });
 
-                        return;
-                    }
+                    return;
                 }
 
                 dispatch({
@@ -156,6 +156,21 @@ export function BuilderRenderer({
                 );
 
                 if (componentType) {
+                    const definition = componentRegistry[
+                        componentType as BuilderNode["type"]
+                        ];
+
+                    if (!definition) {
+                        return;
+                    }
+
+                    if (
+                        definition.allowedParentTypes &&
+                        !definition.allowedParentTypes.includes(node.type)
+                    ) {
+                        return;
+                    }
+
                     const newNode = createBuilderNode(
                         componentType as BuilderNode["type"],
                     );

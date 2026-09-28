@@ -13,6 +13,8 @@ import { findNodePosition } from "@/features/builder/utils/find-node-position";
 import { insertNodeAtPosition } from "@/features/builder/utils/insert-node-at-position";
 import type { DropPosition } from "@/features/builder/types/drop-position.types";
 import { moveNodeToPosition } from "@/features/builder/utils/move-node-to-position";
+import {findNodeById} from "@/features/builder/utils/find-node";
+import {canAddNodeToParent} from "@/features/builder/utils/can-add-node";
 
 export interface BuilderHistory {
     past: BuilderDocument[];
@@ -159,21 +161,37 @@ export function builderReducer(
                     updateNodeStyles(child, action.nodeId, action.styles),
                 ),
             });
-        case "ADD_NODE":
-            return {
-                ...commitDocument(state, {
-                    ...state.document,
-                    children: state.document.children.map((child) =>
-                        addNodeToParent(
-                            child,
-                            action.parentId,
-                            action.node,
-                            action.index,
-                        ),
+        case "ADD_NODE": {
+            const parent = findNodeById(
+                state.document,
+                action.parentId,
+            );
+
+            if (!parent) {
+                return state;
+            }
+
+            if (!canAddNodeToParent(action.node, parent)) {
+                return state;
+            }
+
+            const document = {
+                ...state.document,
+                children: state.document.children.map((child) =>
+                    addNodeToParent(
+                        child,
+                        action.parentId,
+                        action.node,
+                        action.index,
                     ),
-                }),
+                ),
+            };
+
+            return {
+                ...commitDocument(state, document),
                 selectedNodeId: action.node.id,
             };
+        }
         case "DELETE_NODE":
             return {
                 ...commitDocument(state, {
