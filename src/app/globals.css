@@ -29,14 +29,7 @@ body {
   outline: 2px solid #2563eb;
   outline-offset: 2px;
 }
-.builder-layout-node {
-  min-height: 40px;
-}
 
-.builder-layout-node.builder-node-selected {
-  outline: 2px solid #2563eb;
-  outline-offset: -2px;
-}
 
 .builder-drop-indicator {
   position: absolute;
@@ -67,4 +60,40 @@ body {
 }
 .builder-node-drop-invalid {
   cursor: not-allowed;
+}
+.builder-node-wrapper {
+  position: relative;
+  transition:
+          outline-color 150ms ease,
+          box-shadow 150ms ease,
+          background-color 150ms ease;
+}
+
+/* Hover */
+.builder-node-wrapper:hover {
+  outline: 1px dashed rgb(148 163 184 / 0.7);
+  outline-offset: -1px;
+}
+
+/* Selected */
+.builder-node-selected {
+  outline: 2px solid #2563eb;
+  outline-offset: -2px;
+  box-shadow: 0 0 0 1px rgb(37 99 235 / 0.08);
+}
+
+/* Layout nodes */
+.builder-layout-node {
+  min-height: 40px;
+}
+
+/* Layout hover */
+.builder-layout-node:hover {
+  background-color: rgb(248 250 252 / 0.5);
+}
+
+/* Selected layout */
+.builder-layout-node.builder-node-selected {
+  outline: 2px solid #2563eb;
+  outline-offset: -2px;
 }

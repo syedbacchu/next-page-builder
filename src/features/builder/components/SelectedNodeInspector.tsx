@@ -4,6 +4,10 @@ import { componentRegistry } from "@/features/builder/registry/component-registr
 import { useBuilder } from "@/features/builder/store/BuilderProvider";
 import { findNodeById } from "@/features/builder/utils/find-node";
 import { BuilderField } from "@/features/builder/components/BuilderField";
+import {
+    getStyleValue,
+    isResponsiveStyles,
+} from "@/features/builder/types/builder.types";
 
 export function SelectedNodeInspector() {
     const { state, dispatch } = useBuilder();
@@ -49,11 +53,29 @@ export function SelectedNodeInspector() {
             if (typeof value !== "string") {
                 return;
             }
+
+            const currentStyles =
+                findNodeById(
+                    state.document,
+                    selectedNodeId,
+                )?.styles;
+
+            const responsiveStyles =
+                currentStyles &&
+                isResponsiveStyles(currentStyles)
+                    ? currentStyles
+                    : {
+                        desktop: currentStyles ?? {},
+                    };
+
             dispatch({
                 type: "UPDATE_NODE_STYLES",
                 nodeId: selectedNodeId,
                 styles: {
-                    [key]: value,
+                    [state.viewport]: {
+                        ...(responsiveStyles[state.viewport] ?? {}),
+                        [key]: value,
+                    },
                 },
             });
 
@@ -77,10 +99,6 @@ export function SelectedNodeInspector() {
 
             <div className="space-y-5">
                 {Object.entries(schema).map(([key, field]) => {
-                    const value =
-                        selectedNode.props[key] ??
-                        field.defaultValue ??
-                        "";
 
                     return (
                         <BuilderField
@@ -89,7 +107,11 @@ export function SelectedNodeInspector() {
                             field={field}
                             value={
                                 field.source === "styles"
-                                    ? selectedNode.styles?.[key] ??
+                                    ? getStyleValue(
+                                        selectedNode.styles,
+                                        key,
+                                        state.viewport,
+                                    ) ??
                                     field.defaultValue ??
                                     ""
                                     : selectedNode.props[key] ??

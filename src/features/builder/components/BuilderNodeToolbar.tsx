@@ -19,6 +19,7 @@ export function BuilderNodeToolbar() {
             nodeId: state.selectedNodeId,
         });
     }
+
     function handleDuplicate() {
         if (!state.selectedNodeId) {
             return;
@@ -29,6 +30,7 @@ export function BuilderNodeToolbar() {
             nodeId: state.selectedNodeId,
         });
     }
+
     function handleMoveUp() {
         if (!state.selectedNodeId) {
             return;
@@ -53,7 +55,14 @@ export function BuilderNodeToolbar() {
 
     return (
         <div
-            className="absolute left-0 top-0 z-[9999] flex items-center gap-1 rounded-md border bg-white p-1 shadow-lg"
+            className={[
+                "absolute right-full top-1/2 z-[9999]",
+                "mr-2 -translate-y-1/2",
+                "flex flex-col items-center gap-1",
+                "rounded-lg border border-slate-200",
+                "bg-white p-1",
+                "shadow-lg",
+            ].join(" ")}
             onClick={(event) => {
                 event.stopPropagation();
             }}
@@ -61,7 +70,8 @@ export function BuilderNodeToolbar() {
             <button
                 type="button"
                 onClick={handleMoveUp}
-                className="rounded px-2 py-1.5 text-xs font-medium hover:bg-gray-100"
+                title="Move up"
+                className="flex h-8 w-8 items-center justify-center rounded-md text-sm font-medium text-slate-600 transition hover:bg-slate-100 hover:text-slate-900"
             >
                 ↑
             </button>
@@ -69,7 +79,8 @@ export function BuilderNodeToolbar() {
             <button
                 type="button"
                 onClick={handleMoveDown}
-                className="rounded px-2 py-1.5 text-xs font-medium hover:bg-gray-100"
+                title="Move down"
+                className="flex h-8 w-8 items-center justify-center rounded-md text-sm font-medium text-slate-600 transition hover:bg-slate-100 hover:text-slate-900"
             >
                 ↓
             </button>
@@ -77,17 +88,19 @@ export function BuilderNodeToolbar() {
             <button
                 type="button"
                 onClick={handleDuplicate}
-                className="rounded px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-100"
+                title="Duplicate"
+                className="flex h-8 w-8 items-center justify-center rounded-md text-sm font-medium text-slate-600 transition hover:bg-slate-100 hover:text-slate-900"
             >
-                Duplicate
+                ⧉
             </button>
 
             <button
                 type="button"
                 onClick={handleDelete}
-                className="rounded bg-red-50 px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-100"
+                title="Delete"
+                className="flex h-8 w-8 items-center justify-center rounded-md text-sm font-medium text-red-500 transition hover:bg-red-50 hover:text-red-600"
             >
-                Delete
+                🗑
             </button>
         </div>
     );

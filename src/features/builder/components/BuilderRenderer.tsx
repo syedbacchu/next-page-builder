@@ -10,6 +10,7 @@ import {createBuilderNode} from "@/features/builder/utils/create-node";
 import { canDropNode } from "@/features/builder/utils/can-drop-node";
 import {DropPosition} from "@/features/builder/types/drop-position.types";
 import { canDropNewComponent } from "@/features/builder/utils/can-drop-new-component";
+import {getNodeStyles} from "@/features/builder/utils/get-node-styles";
 
 interface BuilderRendererProps {
     node: BuilderNode;
@@ -66,6 +67,14 @@ export function BuilderRenderer({
             state.drag.activeNodeId,
             state.drag.dropPosition,
         );
+
+    const isLayoutNode =
+        node.type === "section" ||
+        node.type === "container";
+
+    const isEmptyLayoutNode =
+        isLayoutNode &&
+        node.children.length === 0;
 
     return (
         <div
@@ -222,12 +231,6 @@ export function BuilderRenderer({
             onClick={(event) => {
                 event.stopPropagation();
 
-                console.log(
-                    "NODE CLICK:",
-                    node.id,
-                    node.type,
-                );
-
                 dispatch({
                     type: "SELECT_NODE",
                     nodeId: node.id,
@@ -237,11 +240,6 @@ export function BuilderRenderer({
                     node.type === "section" ||
                     node.type === "container"
                 ) {
-                    console.log(
-                        "UPDATE INSERT TARGET:",
-                        node.id,
-                    );
-
                     dispatch({
                         type: "SET_INSERT_TARGET",
                         nodeId: node.id,
@@ -249,7 +247,7 @@ export function BuilderRenderer({
                 }
             }}
             className={[
-                "builder-node-wrapper relative",
+                "builder-node-wrapper group relative",
                 isSelected ? "builder-node-selected" : "",
                 isDragging ? "builder-node-dragging" : "",
                 isInvalidDropTarget
@@ -260,15 +258,76 @@ export function BuilderRenderer({
                     ? "builder-layout-node"
                     : "",
             ].join(" ")}
-            style={node.styles}
+            style={getNodeStyles(node.styles, state.viewport)}
         >
             {isSelected && <BuilderNodeToolbar />}
+
+            {(node.type === "section" ||
+                node.type === "container") && (
+                <div
+                    className={[
+                        "pointer-events-none absolute left-2 top-2 z-[9997]",
+                        "flex items-center gap-1",
+                        "rounded-md border border-slate-200",
+                        "bg-white/95 px-2 py-1",
+                        "text-[9px] font-bold uppercase tracking-wider",
+                        "text-slate-500",
+                        "shadow-sm backdrop-blur-sm",
+                        "transition-opacity duration-150",
+                        isSelected
+                            ? "opacity-100"
+                            : "opacity-0 group-hover:opacity-100",
+                    ].join(" ")}
+                >
+                    <span className="h-1.5 w-1.5 rounded-full bg-blue-500" />
+                    {node.type}
+                </div>
+            )}
 
             {isDropTarget && !isInvalidDropTarget && (
                 <BuilderDropIndicator />
             )}
+
             <Component {...node.props}>
-                {children}
+                {isEmptyLayoutNode ? (
+                    <div
+                        className="flex min-h-[100px] items-center justify-center rounded-md border-2 border-dashed border-slate-200 bg-slate-50/50 p-6"
+                        onClick={(event) => {
+                            event.stopPropagation();
+
+                            dispatch({
+                                type: "SET_INSERT_TARGET",
+                                nodeId: node.id,
+                            });
+                        }}
+                    >
+                        <div className="text-center">
+                            <div
+                                className={[
+                                    "mx-auto mb-3 flex h-10 w-10 items-center justify-center",
+                                    "rounded-full border border-dashed border-slate-300",
+                                    "bg-white text-xl text-slate-400",
+                                    "transition",
+                                    "group-hover:border-blue-400",
+                                    "group-hover:bg-blue-50",
+                                    "group-hover:text-blue-500",
+                                ].join(" ")}
+                            >
+                                +
+                            </div>
+
+                            <p className="text-sm font-semibold text-slate-600">
+                                Add Element
+                            </p>
+
+                            <p className="mt-1 text-xs text-slate-400">
+                                Drag an element here or select one from the sidebar
+                            </p>
+                        </div>
+                    </div>
+                ) : (
+                    children
+                )}
             </Component>
         </div>
     );

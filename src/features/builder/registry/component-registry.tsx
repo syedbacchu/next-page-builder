@@ -51,7 +51,7 @@ export const componentRegistry: Record<
     heading: {
         type: "heading",
         label: "Heading",
-        category: "basic",
+        category: "Basic",
         canHaveChildren: false,
         allowedParentTypes: ["container"],
         component: Heading,
@@ -76,6 +76,12 @@ export const componentRegistry: Record<
                     { label: "H5", value: 5 },
                     { label: "H6", value: 6 },
                 ],
+            },
+            fontSize: {
+                type: "text",
+                label: "Font Size",
+                source: "styles",
+                defaultValue: "48px",
             },
             color: {
                 type: "color",

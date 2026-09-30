@@ -4,6 +4,7 @@ import { addNodeToParent } from "@/features/builder/utils/add-node";
 import type {
     BuilderDocument,
     BuilderNode,
+    BuilderNodeStyles
 } from "@/features/builder/types/builder.types";
 import { findFirstContainer } from "@/features/builder/utils/find-first-container";
 import { deleteNode } from "@/features/builder/utils/delete-node";
@@ -16,6 +17,9 @@ import { moveNodeToPosition } from "@/features/builder/utils/move-node-to-positi
 import {findNodeById} from "@/features/builder/utils/find-node";
 import {canAddNodeToParent} from "@/features/builder/utils/can-add-node";
 import { canDropNode } from "@/features/builder/utils/can-drop-node";
+import { selectNode } from "@/features/builder/utils/select-node";
+import { findParentNode } from "@/features/builder/utils/find-parent-node";
+import {BuilderViewport} from "@/features/builder/types/builder-viewport.types";
 
 export interface BuilderHistory {
     past: BuilderDocument[];
@@ -26,6 +30,7 @@ export interface BuilderState {
     document: BuilderDocument;
     selectedNodeId: string | null;
     insertTargetNodeId: string | null;
+    viewport: BuilderViewport;
 
     drag: {
         activeNodeId: string | null;
@@ -49,10 +54,10 @@ export type BuilderAction =
     nodeId: string;
     props: Record<string, unknown>;
 }
-| {
+    | {
     type: "UPDATE_NODE_STYLES";
     nodeId: string;
-    styles: Record<string, string>;
+    styles: BuilderNodeStyles;
 }
 | {
     type: "ADD_NODE";
@@ -64,7 +69,7 @@ export type BuilderAction =
     nodeId: string;
 }| {
     type: "SET_INSERT_TARGET";
-    nodeId: string;
+    nodeId: string | null;
 }| {
     type: "DUPLICATE_NODE";
     nodeId: string;
@@ -96,10 +101,14 @@ export type BuilderAction =
     position: DropPosition;
 }| {
     type: "DROP_NODE";
+}| {
+    type: "SET_VIEWPORT";
+    viewport: BuilderViewport;
 };
 
 export function createInitialBuilderState(
     document: BuilderDocument,
+    viewport: BuilderViewport = "desktop",
 ): BuilderState {
     const firstContainer = findFirstContainer(document);
 
@@ -107,10 +116,14 @@ export function createInitialBuilderState(
         document,
         selectedNodeId: null,
         insertTargetNodeId: firstContainer?.id ?? null,
+
+        viewport,
+
         history: {
             past: [],
             future: [],
         },
+
         drag: {
             activeNodeId: null,
             dropPosition: null,
@@ -138,10 +151,10 @@ export function builderReducer(
 ): BuilderState {
     switch (action.type) {
         case "SELECT_NODE":
-            return {
-                ...state,
-                selectedNodeId: action.nodeId,
-            };
+            return selectNode(
+                state,
+                action.nodeId,
+            );
 
         case "SET_DOCUMENT":
             return {
@@ -159,7 +172,11 @@ export function builderReducer(
             return commitDocument(state, {
                 ...state.document,
                 children: state.document.children.map((child) =>
-                    updateNodeStyles(child, action.nodeId, action.styles),
+                    updateNodeStyles(
+                        child,
+                        action.nodeId,
+                        action.styles,
+                    ),
                 ),
             });
         case "ADD_NODE": {
@@ -176,70 +193,128 @@ export function builderReducer(
                 return state;
             }
 
+            let document: BuilderDocument;
+
             // Adding directly to the root Page
             if (action.parentId === state.document.id) {
-                const document = {
-                    ...state.document,
-                    children:
-                        action.index === undefined
-                            ? [
-                                ...state.document.children,
-                                action.node,
-                            ]
-                            : [
-                                ...state.document.children.slice(
-                                    0,
-                                    action.index,
-                                ),
-                                action.node,
-                                ...state.document.children.slice(
-                                    action.index,
-                                ),
-                            ],
-                };
+                const children =
+                    action.index === undefined
+                        ? [
+                            ...state.document.children,
+                            action.node,
+                        ]
+                        : [
+                            ...state.document.children.slice(
+                                0,
+                                action.index,
+                            ),
+                            action.node,
+                            ...state.document.children.slice(
+                                action.index,
+                            ),
+                        ];
 
-                return {
-                    ...commitDocument(state, document),
-                    selectedNodeId: action.node.id,
-                    insertTargetNodeId: action.node.id,
+                document = {
+                    ...state.document,
+                    children,
+                };
+            } else {
+                // Adding to nested node
+                const children =
+                    state.document.children.map((child) =>
+                        addNodeToParent(
+                            child,
+                            action.parentId,
+                            action.node,
+                            action.index,
+                        ),
+                    );
+
+                document = {
+                    ...state.document,
+                    children,
                 };
             }
 
-            // Adding to nested node
+            return {
+                ...commitDocument(
+                    state,
+                    document,
+                ),
+                selectedNodeId: action.node.id,
+                insertTargetNodeId: action.node.id,
+            };
+        }
+        case "DELETE_NODE": {
+            // Root Page cannot be deleted.
+            if (action.nodeId === state.document.id) {
+                return state;
+            }
+
+            const node = findNodeById(
+                state.document,
+                action.nodeId,
+            );
+
+            if (!node) {
+                return state;
+            }
+
+            const parentNode = findParentNode(
+                state.document,
+                action.nodeId,
+            );
+
             const document = {
                 ...state.document,
                 children: state.document.children.map((child) =>
-                    addNodeToParent(
-                        child,
-                        action.parentId,
-                        action.node,
-                        action.index,
-                    ),
+                    deleteNode(child, action.nodeId),
                 ),
             };
 
             return {
                 ...commitDocument(state, document),
-                selectedNodeId: action.node.id,
-                insertTargetNodeId: action.node.id,
+
+                // Select the deleted node's parent.
+                selectedNodeId:
+                    parentNode?.id ?? null,
+
+                // If deleted node was the insert target,
+                // use the parent as the new insert target.
+                insertTargetNodeId:
+                    state.insertTargetNodeId === action.nodeId
+                        ? parentNode?.id ?? null
+                        : state.insertTargetNodeId,
             };
         }
-        case "DELETE_NODE":
-            return {
-                ...commitDocument(state, {
-                    ...state.document,
-                    children: state.document.children.map((child) =>
-                        deleteNode(child, action.nodeId),
-                    ),
-                }),
-                selectedNodeId: null,
-            };
-        case "SET_INSERT_TARGET":
+        case "SET_INSERT_TARGET": {
+            if (action.nodeId === null) {
+                return {
+                    ...state,
+                    insertTargetNodeId: null,
+                };
+            }
+
+            const node = findNodeById(
+                state.document,
+                action.nodeId,
+            );
+
+            if (!node) {
+                return state;
+            }
+
             return {
                 ...state,
-                insertTargetNodeId: action.nodeId,
+                insertTargetNodeId: node.id,
             };
+        }
         case "DUPLICATE_NODE": {
+            // Root Page cannot be duplicated.
+            if (action.nodeId === state.document.id) {
+                return state;
+            }
+
             const result = duplicateNode(
                 state.document,
                 action.nodeId,
@@ -250,24 +325,73 @@ export function builderReducer(
             }
 
             return {
-                ...commitDocument(state, result.document),
-                selectedNodeId: result.duplicatedNode.id,
+                ...commitDocument(
+                    state,
+                    result.document,
+                ),
+                selectedNodeId:
+                result.duplicatedNode.id,
+                insertTargetNodeId:
+                result.duplicatedNode.id,
             };
         }
-        case "MOVE_NODE_UP":
-            return commitDocument(state, {
+        case "MOVE_NODE_UP": {
+            const newChildren = state.document.children.map(
+                (child) =>
+                    moveNodeUp(
+                        child,
+                        action.nodeId,
+                    ),
+            );
+
+            const hasChanged = newChildren.some(
+                (child, index) =>
+                    child !== state.document.children[index],
+            );
+
+            if (!hasChanged) {
+                return state;
+            }
+
+            const document = {
                 ...state.document,
-                children: state.document.children.map((child) =>
-                    moveNodeUp(child, action.nodeId),
-                ),
-            });
-        case "MOVE_NODE_DOWN":
-            return commitDocument(state, {
+                children: newChildren,
+            };
+
+            return commitDocument(
+                state,
+                document,
+            );
+        }
+
+        case "MOVE_NODE_DOWN": {
+            const newChildren = state.document.children.map(
+                (child) =>
+                    moveNodeDown(
+                        child,
+                        action.nodeId,
+                    ),
+            );
+
+            const hasChanged = newChildren.some(
+                (child, index) =>
+                    child !== state.document.children[index],
+            );
+
+            if (!hasChanged) {
+                return state;
+            }
+
+            const document = {
                 ...state.document,
-                children: state.document.children.map((child) =>
-                    moveNodeDown(child, action.nodeId),
-                ),
-            });
+                children: newChildren,
+            };
+
+            return commitDocument(
+                state,
+                document,
+            );
+        }
         case "UNDO": {
             const previousDocument =
                 state.history.past[
@@ -434,6 +558,11 @@ export function builderReducer(
                 },
             };
         }
+        case "SET_VIEWPORT":
+            return {
+                ...state,
+                viewport: action.viewport,
+            };
         default:
             return state;
     }
