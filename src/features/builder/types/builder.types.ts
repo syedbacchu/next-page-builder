@@ -6,6 +6,8 @@ export type BuilderNodeType =
     | "page"
     | "section"
     | "container"
+    | "row"
+    | "column"
     | "heading"
     | "text"
     | "image"

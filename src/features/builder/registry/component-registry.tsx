@@ -7,6 +7,10 @@ import { Text } from "@/features/builder/components/basic/Text";
 import type { BuilderNodeType } from "@/features/builder/types/builder.types";
 import type { BuilderComponentProps } from "@/features/builder/types/component.types";
 import type { ComponentSchema } from "@/features/builder/types/component-schema.types";
+import { Container } from "@/features/builder/components/basic/Container";
+import { Row } from "@/features/builder/components/basic/Row";
+import { Column } from "@/features/builder/components/basic/Column";
+
 export interface BuilderComponentDefinition {
     type: BuilderNodeType;
     label: string;
@@ -45,15 +49,129 @@ export const componentRegistry: Record<
         category: "layout",
         canHaveChildren: true,
         allowedParentTypes: ["section", "page"],
-        component: ({ children }) => <div>{children}</div>,
-    },
+        component: Container,
 
+        schema: {
+            direction: {
+                type: "select",
+                label: "Direction",
+                source: "props",
+                defaultValue: "column",
+                options: [
+                    {
+                        label: "Column",
+                        value: "column",
+                    },
+                    {
+                        label: "Row",
+                        value: "row",
+                    },
+                ],
+            },
+
+            gap: {
+                type: "text",
+                label: "Gap",
+                source: "props",
+                defaultValue: "0px",
+            },
+            align: {
+                type: "select",
+                label: "Align",
+                source: "props",
+                defaultValue: "stretch",
+                options: [
+                    {
+                        label: "Start",
+                        value: "flex-start",
+                    },
+                    {
+                        label: "Center",
+                        value: "center",
+                    },
+                    {
+                        label: "End",
+                        value: "flex-end",
+                    },
+                    {
+                        label: "Stretch",
+                        value: "stretch",
+                    },
+                ],
+            },
+
+            justify: {
+                type: "select",
+                label: "Justify",
+                source: "props",
+                defaultValue: "flex-start",
+                options: [
+                    {
+                        label: "Start",
+                        value: "flex-start",
+                    },
+                    {
+                        label: "Center",
+                        value: "center",
+                    },
+                    {
+                        label: "End",
+                        value: "flex-end",
+                    },
+                    {
+                        label: "Space Between",
+                        value: "space-between",
+                    },
+                    {
+                        label: "Space Around",
+                        value: "space-around",
+                    },
+                    {
+                        label: "Space Evenly",
+                        value: "space-evenly",
+                    },
+                ],
+            },
+        },
+    },
+    row: {
+        type: "row",
+        label: "Row",
+        category: "layout",
+        canHaveChildren: true,
+        allowedParentTypes: ["section", "container"],
+        component: Row,
+        schema: {
+            gap: {
+                type: "text",
+                label: "Gap",
+                source: "props",
+                defaultValue: "16px",
+            },
+        },
+    },
+    column: {
+        type: "column",
+        label: "Column",
+        category: "layout",
+        canHaveChildren: true,
+        allowedParentTypes: ["row"],
+        component: Column,
+        schema: {
+            width: {
+                type: "text",
+                label: "Width",
+                source: "props",
+                defaultValue: "100%",
+            },
+        },
+    },
     heading: {
         type: "heading",
         label: "Heading",
         category: "Basic",
         canHaveChildren: false,
-        allowedParentTypes: ["container"],
+        allowedParentTypes: ["container", "column"],
         component: Heading,
         schema: {
             text: {
@@ -105,7 +223,7 @@ export const componentRegistry: Record<
         category: "basic",
         canHaveChildren: false,
         component: Text,
-        allowedParentTypes: ["container"],
+        allowedParentTypes: ["container", "column"],
 
         schema: {
             text: {
@@ -122,7 +240,7 @@ export const componentRegistry: Record<
         category: "basic",
         canHaveChildren: false,
         component: Image,
-        allowedParentTypes: ["container"],
+        allowedParentTypes: ["container", "column"],
 
         schema: {
             src: {
