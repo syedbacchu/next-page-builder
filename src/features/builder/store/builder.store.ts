@@ -38,6 +38,12 @@ export interface BuilderState {
     };
 
     history: BuilderHistory;
+    resize: {
+        active: boolean;
+        nodeId: string | null;
+        startX: number | null;
+        startSpan: number | null;
+    },
 }
 
 export type BuilderAction =
@@ -104,6 +110,14 @@ export type BuilderAction =
 }| {
     type: "SET_VIEWPORT";
     viewport: BuilderViewport;
+}| {
+    type: "START_COLUMN_RESIZE";
+    nodeId: string;
+    startX: number;
+    startSpan: number;
+}
+    | {
+    type: "END_COLUMN_RESIZE";
 };
 
 export function createInitialBuilderState(
@@ -123,7 +137,12 @@ export function createInitialBuilderState(
             past: [],
             future: [],
         },
-
+        resize: {
+            active: false,
+            nodeId: null,
+            startX: null,
+            startSpan: null,
+        },
         drag: {
             activeNodeId: null,
             dropPosition: null,
@@ -562,6 +581,26 @@ export function builderReducer(
             return {
                 ...state,
                 viewport: action.viewport,
+            };
+        case "START_COLUMN_RESIZE":
+            return {
+                ...state,
+                resize: {
+                    active: true,
+                    nodeId: action.nodeId,
+                    startX: action.startX,
+                    startSpan: action.startSpan,
+                },
+            };
+        case "END_COLUMN_RESIZE":
+            return {
+                ...state,
+                resize: {
+                    active: false,
+                    nodeId: null,
+                    startX: null,
+                    startSpan: null,
+                },
             };
         default:
             return state;

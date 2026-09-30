@@ -164,6 +164,12 @@ export const componentRegistry: Record<
                 source: "props",
                 defaultValue: "100%",
             },
+            span: {
+                type: "number",
+                label: "Column Span",
+                source: "props",
+                defaultValue: 12,
+            },
         },
     },
     heading: {
@@ -263,7 +269,7 @@ export const componentRegistry: Record<
         category: "basic",
         canHaveChildren: false,
         component: Button,
-        allowedParentTypes: ["container"],
+        allowedParentTypes: ["container", "column"],
 
         schema: {
             text: {

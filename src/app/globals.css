@@ -97,3 +97,24 @@ body {
   outline: 2px solid #2563eb;
   outline-offset: -2px;
 }
+
+.builder-column-node {
+  position: relative;
+  min-width: 0;
+  min-height: 80px;
+  outline: 1px dashed rgb(148 163 184 / 0.35);
+  outline-offset: -1px;
+  transition:
+          outline-color 150ms ease,
+          background-color 150ms ease;
+}
+
+.builder-column-node:hover {
+  outline-color: rgb(59 130 246 / 0.55);
+  background-color: rgb(248 250 252 / 0.45);
+}
+
+.builder-column-node.builder-node-selected {
+  outline: 2px solid #2563eb;
+  outline-offset: -2px;
+}

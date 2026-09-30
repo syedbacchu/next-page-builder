@@ -6,15 +6,15 @@ interface RowProps extends BuilderComponentProps {
 }
 
 export function Row({
-    children,
-    gap = "16px",
-}: RowProps) {
+                        children,
+                        gap = "16px",
+                    }: RowProps) {
     return (
         <div
-            className="w-full"
+            className="grid w-full"
             style={{
-                display: "flex",
-                flexDirection: "row",
+                gridTemplateColumns:
+                    "repeat(12, minmax(0, 1fr))",
                 gap,
             }}
         >

@@ -2,20 +2,14 @@ import type { BuilderComponentProps } from "@/features/builder/types/component.t
 
 interface ColumnProps extends BuilderComponentProps {
     children?: React.ReactNode;
-    width?: string;
+    span?: number;
 }
 
 export function Column({
    children,
-   width = "100%",
 }: ColumnProps) {
     return (
-        <div
-            style={{
-                width,
-                minWidth: 0,
-            }}
-        >
+        <div className="min-h-[80px] min-w-0">
             {children}
         </div>
     );

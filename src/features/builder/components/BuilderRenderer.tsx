@@ -5,12 +5,14 @@ import { componentRegistry } from "@/features/builder/registry/component-registr
 import type { BuilderNode } from "@/features/builder/types/builder.types";
 import { BuilderNodeToolbar } from "@/features/builder/components/BuilderNodeToolbar";
 import { BuilderDropIndicator } from "@/features/builder/components/BuilderDropIndicator";
-import { findNodeById } from "@/features/builder/utils/find-node";
 import {createBuilderNode} from "@/features/builder/utils/create-node";
 import { canDropNode } from "@/features/builder/utils/can-drop-node";
 import {DropPosition} from "@/features/builder/types/drop-position.types";
 import { canDropNewComponent } from "@/features/builder/utils/can-drop-new-component";
 import {getNodeStyles} from "@/features/builder/utils/get-node-styles";
+import { BuilderColumnResizeHandle } from "@/features/builder/components/BuilderColumnResizeHandle";
+import { calculateColumnSpan } from "@/features/builder/utils/calculate-column-span";
+import { resizeColumnPair } from "@/features/builder/utils/resize-column";
 
 interface BuilderRendererProps {
     node: BuilderNode;
@@ -69,8 +71,10 @@ export function BuilderRenderer({
         );
 
     const isLayoutNode =
-        node.type === "section" ||
-        node.type === "container";
+        (node.type === "section" ||
+            node.type === "container" ||
+            node.type === "column") &&
+        node.children.length === 0;
 
     const isEmptyLayoutNode =
         isLayoutNode &&
@@ -78,6 +82,7 @@ export function BuilderRenderer({
 
     return (
         <div
+            data-builder-node-id={node.id}
             draggable
             onDragStart={(event) => {
                 event.stopPropagation();
@@ -246,24 +251,85 @@ export function BuilderRenderer({
                     });
                 }
             }}
+
             className={[
-                "builder-node-wrapper group relative",
-                isSelected ? "builder-node-selected" : "",
-                isDragging ? "builder-node-dragging" : "",
-                isInvalidDropTarget
-                    ? "builder-node-drop-invalid"
-                    : "",
+                "builder-node-wrapper",
                 node.type === "section" ||
-                node.type === "container"
+                node.type === "container" ||
+                node.type === "row" ||
+                node.type === "column"
                     ? "builder-layout-node"
                     : "",
+
+                node.type === "column"
+                    ? "builder-column-node"
+                    : "",
+
+                isSelected
+                    ? "builder-node-selected"
+                    : "",
             ].join(" ")}
-            style={getNodeStyles(node.styles, state.viewport)}
+            style={{
+                ...getNodeStyles(
+                    node.styles,
+                    state.viewport,
+                ),
+
+                ...(node.type === "column"
+                    ? {
+                        gridColumn: `span ${
+                            Math.min(
+                                12,
+                                Math.max(
+                                    1,
+                                    Number(
+                                        node.props.span ?? 12,
+                                    ),
+                                ),
+                            )
+                        } / span ${
+                            Math.min(
+                                12,
+                                Math.max(
+                                    1,
+                                    Number(
+                                        node.props.span ?? 12,
+                                    ),
+                                ),
+                            )
+                        }`,
+                    }
+                    : {}),
+            }}
         >
             {isSelected && <BuilderNodeToolbar />}
 
+            {node.type === "column" && (
+                <BuilderColumnResizeHandle
+                    onResizeStart={(event) => {
+                        event.stopPropagation();
+
+                        dispatch({
+                            type: "START_COLUMN_RESIZE",
+                            nodeId: node.id,
+                            startX: event.clientX,
+                            startSpan: Number(
+                                node.props.span ?? 12,
+                            ),
+                        });
+                    }}
+                    onResizeEnd={() => {
+                        dispatch({
+                            type: "END_COLUMN_RESIZE",
+                        });
+                    }}
+                />
+            )}
+
             {(node.type === "section" ||
-                node.type === "container") && (
+                node.type === "container" ||
+                node.type === "row" ||
+                node.type === "column") && (
                 <div
                     className={[
                         "pointer-events-none absolute left-2 top-2 z-[9997]",
@@ -294,6 +360,11 @@ export function BuilderRenderer({
                         className="flex min-h-[100px] items-center justify-center rounded-md border-2 border-dashed border-slate-200 bg-slate-50/50 p-6"
                         onClick={(event) => {
                             event.stopPropagation();
+
+                            dispatch({
+                                type: "SELECT_NODE",
+                                nodeId: node.id,
+                            });
 
                             dispatch({
                                 type: "SET_INSERT_TARGET",
