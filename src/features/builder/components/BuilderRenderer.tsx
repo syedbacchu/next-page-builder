@@ -5,14 +5,13 @@ import { componentRegistry } from "@/features/builder/registry/component-registr
 import type { BuilderNode } from "@/features/builder/types/builder.types";
 import { BuilderNodeToolbar } from "@/features/builder/components/BuilderNodeToolbar";
 import { BuilderDropIndicator } from "@/features/builder/components/BuilderDropIndicator";
-import {createBuilderNode} from "@/features/builder/utils/create-node";
 import { canDropNode } from "@/features/builder/utils/can-drop-node";
-import {DropPosition} from "@/features/builder/types/drop-position.types";
-import { canDropNewComponent } from "@/features/builder/utils/can-drop-new-component";
 import {getNodeStyles} from "@/features/builder/utils/get-node-styles";
 import { BuilderColumnResizeHandle } from "@/features/builder/components/BuilderColumnResizeHandle";
-import { calculateColumnSpan } from "@/features/builder/utils/calculate-column-span";
-import { resizeColumnPair } from "@/features/builder/utils/resize-column";
+import { BuilderNodeWrapper } from "@/features/builder/components/BuilderNodeWrapper";
+import {useBuilderDragDrop} from "@/features/builder/hooks/use-builder-drag-drop";
+import { useBuilderNodeSelection } from "@/features/builder/hooks/use-builder-node-selection";
+import { useBuilderColumnResize } from "@/features/builder/hooks/use-builder-column-resize";
 
 interface BuilderRendererProps {
     node: BuilderNode;
@@ -24,6 +23,22 @@ export function BuilderRenderer({
     const { state, dispatch } = useBuilder();
     console.log("Rendering node:", node.id);
     console.log("Selected node:", state.selectedNodeId);
+    const {
+        handleDragStart,
+        handleDragOver,
+        handleDrop,
+        handleDragEnd,
+    } = useBuilderDragDrop({ node });
+
+    const {
+        handleNodeClick,
+    } = useBuilderNodeSelection({ node });
+
+    const {
+        handleResizeStart,
+        handleResizeMove,
+        handleResizeEnd,
+    } = useBuilderColumnResize({ node });
 
     const definition = componentRegistry[node.type];
 
@@ -81,194 +96,10 @@ export function BuilderRenderer({
         node.children.length === 0;
 
     return (
-        <div
-            data-builder-node-id={node.id}
-            draggable
-            onDragStart={(event) => {
-                event.stopPropagation();
-
-                event.dataTransfer.setData(
-                    "application/x-builder-node",
-                    node.id,
-                );
-
-                dispatch({
-                    type: "DRAG_START",
-                    nodeId: node.id,
-                });
-
-                event.dataTransfer.effectAllowed = "move";
-            }}
-            onDragOver={(event) => {
-                event.preventDefault();
-                event.stopPropagation();
-
-                const dragType = event.dataTransfer.types;
-
-                const isNewComponentDrag = dragType.includes(
-                    "application/x-builder-component",
-                );
-
-                const activeNodeId = state.drag.activeNodeId;
-
-                event.dataTransfer.dropEffect =
-                    isNewComponentDrag ? "copy" : "move";
-
-                const rect =
-                    event.currentTarget.getBoundingClientRect();
-
-                const offsetY = event.clientY - rect.top;
-
-                const ratio =
-                    rect.height > 0
-                        ? offsetY / rect.height
-                        : 0.5;
-
-                const definition =
-                    componentRegistry[node.type];
-
-                const position: DropPosition = isNewComponentDrag
-                    ? {
-                        type: "inside",
-                        targetNodeId: node.id,
-                    }
-                    : definition.canHaveChildren &&
-                    ratio > 0.25 &&
-                    ratio < 0.75
-                        ? {
-                            type: "inside",
-                            targetNodeId: node.id,
-                        }
-                        : {
-                            type:
-                                ratio < 0.5
-                                    ? "before"
-                                    : "after",
-                            targetNodeId: node.id,
-                        };
-
-                if (isNewComponentDrag) {
-                    const componentType = event.dataTransfer.getData(
-                        "application/x-builder-component",
-                    ) as BuilderNode["type"];
-
-                    if (
-                        !canDropNewComponent(
-                            componentType,
-                            node.type,
-                        )
-                    ) {
-                        event.dataTransfer.dropEffect = "none";
-                        return;
-                    }
-                }
-                // Existing node drag validation
-                if (!isNewComponentDrag && activeNodeId) {
-                    if (
-                        !canDropNode(
-                            state.document,
-                            activeNodeId,
-                            position,
-                        )
-                    ) {
-                        event.dataTransfer.dropEffect =
-                            "none";
-
-                        return;
-                    }
-                }
-
-                dispatch({
-                    type: "SET_DROP_POSITION",
-                    position,
-                });
-            }}
-
-            onDrop={(event) => {
-                event.preventDefault();
-                event.stopPropagation();
-
-                const componentType = event.dataTransfer.getData(
-                    "application/x-builder-component",
-                );
-
-                // New component from Sidebar
-                if (componentType) {
-                    if (
-                        !canDropNewComponent(
-                            componentType as BuilderNode["type"],
-                            node.type,
-                        )
-                    ) {
-                        return;
-                    }
-
-                    const newNode = createBuilderNode(
-                        componentType as BuilderNode["type"],
-                    );
-
-                    dispatch({
-                        type: "ADD_NODE",
-                        parentId: node.id,
-                        node: newNode,
-                    });
-
-                    return;
-                }
-
-                // Existing builder node
-                if (state.drag.activeNodeId === node.id) {
-                    return;
-                }
-
-                dispatch({
-                    type: "DROP_NODE",
-                });
-            }}
-
-            onDragEnd={(event) => {
-                event.stopPropagation();
-
-                dispatch({
-                    type: "DRAG_END",
-                });
-            }}
-            onClick={(event) => {
-                event.stopPropagation();
-
-                dispatch({
-                    type: "SELECT_NODE",
-                    nodeId: node.id,
-                });
-
-                if (
-                    node.type === "section" ||
-                    node.type === "container"
-                ) {
-                    dispatch({
-                        type: "SET_INSERT_TARGET",
-                        nodeId: node.id,
-                    });
-                }
-            }}
-
-            className={[
-                "builder-node-wrapper",
-                node.type === "section" ||
-                node.type === "container" ||
-                node.type === "row" ||
-                node.type === "column"
-                    ? "builder-layout-node"
-                    : "",
-
-                node.type === "column"
-                    ? "builder-column-node"
-                    : "",
-
-                isSelected
-                    ? "builder-node-selected"
-                    : "",
-            ].join(" ")}
+        <BuilderNodeWrapper
+            nodeId={node.id}
+            nodeType={node.type}
+            isSelected={isSelected}
             style={{
                 ...getNodeStyles(
                     node.styles,
@@ -301,28 +132,22 @@ export function BuilderRenderer({
                     }
                     : {}),
             }}
+
+            onDragStart={handleDragStart}
+            onDragOver={handleDragOver}
+            onDrop={handleDrop}
+            onDragEnd={handleDragEnd}
+            onClick={handleNodeClick}
+
+
         >
             {isSelected && <BuilderNodeToolbar />}
 
             {node.type === "column" && (
                 <BuilderColumnResizeHandle
-                    onResizeStart={(event) => {
-                        event.stopPropagation();
-
-                        dispatch({
-                            type: "START_COLUMN_RESIZE",
-                            nodeId: node.id,
-                            startX: event.clientX,
-                            startSpan: Number(
-                                node.props.span ?? 12,
-                            ),
-                        });
-                    }}
-                    onResizeEnd={() => {
-                        dispatch({
-                            type: "END_COLUMN_RESIZE",
-                        });
-                    }}
+                    onResizeStart={handleResizeStart}
+                    onResizeEnd={handleResizeEnd}
+                    onResizeMove={handleResizeMove}
                 />
             )}
 
@@ -400,6 +225,6 @@ export function BuilderRenderer({
                     children
                 )}
             </Component>
-        </div>
+        </BuilderNodeWrapper>
     );
 }

@@ -56,9 +56,9 @@ export function BuilderNodeToolbar() {
     return (
         <div
             className={[
-                "absolute right-full top-1/2 z-[9999]",
-                "mr-2 -translate-y-1/2",
-                "flex flex-col items-center gap-1",
+                "absolute left-1/2 top-0 z-[9999]",
+                "-translate-x-1/2 -translate-y-[calc(100%+8px)]",
+                "flex flex-row items-center gap-1",
                 "rounded-lg border border-slate-200",
                 "bg-white p-1",
                 "shadow-lg",

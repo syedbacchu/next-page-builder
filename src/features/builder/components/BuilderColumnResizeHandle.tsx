@@ -89,14 +89,12 @@ export function BuilderColumnResizeHandle({
     return (
         <div
             className={[
-                "absolute right-0 top-1/2 z-[9998]",
+                "absolute right-0 top-1/2 z-[9999]",
                 "-translate-y-1/2 translate-x-1/2",
                 "flex h-8 w-3 cursor-col-resize",
                 "items-center justify-center",
                 "rounded-full border border-slate-300",
                 "bg-white shadow-sm",
-                "opacity-0 transition",
-                "group-hover:opacity-100",
             ].join(" ")}
             onMouseDown={handleMouseDown}
             onClick={(event) => {
