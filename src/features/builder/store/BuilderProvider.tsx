@@ -9,10 +9,12 @@ import {
 
 import {
     builderReducer,
-    createInitialBuilderState,
-    type BuilderState,
-    type BuilderAction,
+    createInitialBuilderState
 } from "@/features/builder/store/builder.store";
+import type {
+    BuilderState,
+    BuilderAction,
+} from "@/features/builder/store/builder.types";
 
 import type { BuilderDocument } from "@/features/builder/types/builder.types";
 

@@ -1,4 +1,4 @@
-import type { BuilderState } from "@/features/builder/store/builder.store";
+import type { BuilderState } from "@/features/builder/store/builder.types";
 import { findNodeById } from "@/features/builder/utils/find-node";
 
 export function selectNode(

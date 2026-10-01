@@ -22,123 +22,18 @@ import { findParentNode } from "@/features/builder/utils/find-parent-node";
 import {BuilderViewport} from "@/features/builder/types/builder-viewport.types";
 import { setColumnSpan } from "@/features/builder/utils/set-column-span";
 import { setResponsiveColumnLayout } from "@/features/builder/utils/set-responsive-column-layout";
-export interface BuilderHistory {
-    past: BuilderDocument[];
-    future: BuilderDocument[];
-}
+import type {
+    BuilderAction,
+    BuilderHistory,
+    BuilderState,
+} from "@/features/builder/store/builder.types";
+import {
+    commitDocument,
+    undo,
+    redo,
+} from "@/features/builder/store/builder.history";
+import {handleNodeAction} from "@/features/builder/store/builder.nodes";
 
-export interface BuilderState {
-    document: BuilderDocument;
-    selectedNodeId: string | null;
-    insertTargetNodeId: string | null;
-    viewport: BuilderViewport;
-
-    drag: {
-        activeNodeId: string | null;
-        dropPosition: DropPosition | null;
-    };
-
-    history: BuilderHistory;
-    resize: {
-        active: boolean;
-        nodeId: string | null;
-        nextNodeId: string | null;
-        startX: number | null;
-        startSpan: number | null;
-        nextStartSpan: number | null;
-        startDocument: BuilderDocument | null;
-    };
-}
-
-export type BuilderAction =
-    | {
-    type: "SELECT_NODE";
-    nodeId: string | null;
-}
-    | {
-    type: "SET_DOCUMENT";
-    document: BuilderDocument;
-}
-| {
-    type: "UPDATE_NODE_PROPS";
-    nodeId: string;
-    props: Record<string, unknown>;
-}
-    | {
-    type: "UPDATE_NODE_STYLES";
-    nodeId: string;
-    styles: BuilderNodeStyles;
-}
-| {
-    type: "ADD_NODE";
-    parentId: string;
-    node: BuilderNode;
-    index?: number;
-}| {
-    type: "DELETE_NODE";
-    nodeId: string;
-}| {
-    type: "SET_INSERT_TARGET";
-    nodeId: string | null;
-}| {
-    type: "DUPLICATE_NODE";
-    nodeId: string;
-}| {
-    type: "MOVE_NODE_UP";
-    nodeId: string;
-}| {
-    type: "MOVE_NODE_DOWN";
-    nodeId: string;
-}| {
-    type: "UNDO";
-}| {
-    type: "REDO";
-}| {
-    type: "ADD_NODE_BEFORE";
-    targetNodeId: string;
-    node: BuilderNode;
-} | {
-    type: "ADD_NODE_AFTER";
-    targetNodeId: string;
-    node: BuilderNode;
-}| {
-    type: "DRAG_START";
-    nodeId: string;
-}| {
-    type: "DRAG_END";
-}| {
-    type: "SET_DROP_POSITION";
-    position: DropPosition;
-}| {
-    type: "DROP_NODE";
-}| {
-    type: "SET_VIEWPORT";
-    viewport: BuilderViewport;
-}| {
-    type: "START_COLUMN_RESIZE";
-    nodeId: string;
-    nextNodeId: string;
-    startX: number;
-    startSpan: number;
-    nextStartSpan: number;
-}
-    | {
-    type: "END_COLUMN_RESIZE";
-}| {
-
-    type: "UPDATE_COLUMN_RESIZE";
-    nodeId: string;
-    nextNodeId: string;
-    span: number;
-    nextSpan: number;
-    viewport: BuilderViewport;
-
-}| {
-    type: "SET_RESPONSIVE_COLUMN_LAYOUT";
-    rowId: string;
-    viewport: BuilderViewport;
-    columnsPerRow: number;
-};
 
 export function createInitialBuilderState(
     document: BuilderDocument,
@@ -180,19 +75,7 @@ function getDefaultInsertTarget(
 
     return firstContainer?.id ?? document.id;
 }
-function commitDocument(
-    state: BuilderState,
-    document: BuilderDocument,
-): BuilderState {
-    return {
-        ...state,
-        document,
-        history: {
-            past: [...state.history.past, state.document],
-            future: [],
-        },
-    };
-}
+
 
 export function builderReducer(
     state: BuilderState,
@@ -228,72 +111,8 @@ export function builderReducer(
                     ),
                 ),
             });
-        case "ADD_NODE": {
-            const parent = findNodeById(
-                state.document,
-                action.parentId,
-            );
-
-            if (!parent) {
-                return state;
-            }
-
-            if (!canAddNodeToParent(action.node, parent)) {
-                return state;
-            }
-
-            let document: BuilderDocument;
-
-            // Adding directly to the root Page
-            if (action.parentId === state.document.id) {
-                const children =
-                    action.index === undefined
-                        ? [
-                            ...state.document.children,
-                            action.node,
-                        ]
-                        : [
-                            ...state.document.children.slice(
-                                0,
-                                action.index,
-                            ),
-                            action.node,
-                            ...state.document.children.slice(
-                                action.index,
-                            ),
-                        ];
-
-                document = {
-                    ...state.document,
-                    children,
-                };
-            } else {
-                // Adding to nested node
-                const children =
-                    state.document.children.map((child) =>
-                        addNodeToParent(
-                            child,
-                            action.parentId,
-                            action.node,
-                            action.index,
-                        ),
-                    );
-
-                document = {
-                    ...state.document,
-                    children,
-                };
-            }
-
-            return {
-                ...commitDocument(
-                    state,
-                    document,
-                ),
-                selectedNodeId: action.node.id,
-                insertTargetNodeId: action.node.id,
-            };
-        }
+        case "ADD_NODE":
+            return handleNodeAction(state, action);
         case "DELETE_NODE": {
             // Root Page cannot be deleted.
             if (action.nodeId === state.document.id) {
@@ -441,85 +260,10 @@ export function builderReducer(
                 document,
             );
         }
-        case "UNDO": {
-            const previousDocument =
-                state.history.past[
-                state.history.past.length - 1
-                    ];
-
-            if (!previousDocument) {
-                return state;
-            }
-
-            return {
-                ...state,
-                document: previousDocument,
-
-                selectedNodeId: null,
-                insertTargetNodeId: getDefaultInsertTarget(previousDocument),
-
-                drag: {
-                    activeNodeId: null,
-                    dropPosition: null,
-                },
-
-                resize: {
-                    active: false,
-                    nodeId: null,
-                    nextNodeId: null,
-                    startX: null,
-                    startSpan: null,
-                    nextStartSpan: null,
-                    startDocument: null,
-                },
-
-                history: {
-                    past: state.history.past.slice(0, -1),
-                    future: [
-                        state.document,
-                        ...state.history.future,
-                    ],
-                },
-            };
-        }
-        case "REDO": {
-            const nextDocument = state.history.future[0];
-
-            if (!nextDocument) {
-                return state;
-            }
-
-            return {
-                ...state,
-                document: nextDocument,
-
-                selectedNodeId: null,
-                insertTargetNodeId: getDefaultInsertTarget(nextDocument),
-
-                drag: {
-                    activeNodeId: null,
-                    dropPosition: null,
-                },
-
-                resize: {
-                    active: false,
-                    nodeId: null,
-                    nextNodeId: null,
-                    startX: null,
-                    startSpan: null,
-                    nextStartSpan: null,
-                    startDocument: null,
-                },
-
-                history: {
-                    past: [
-                        ...state.history.past,
-                        state.document,
-                    ],
-                    future: state.history.future.slice(1),
-                },
-            };
-        }
+        case "UNDO":
+            return undo(state);
+        case "REDO":
+            return redo(state);
         case "ADD_NODE_BEFORE": {
             const position = findNodePosition(
                 state.document,
