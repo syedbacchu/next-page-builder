@@ -136,14 +136,7 @@ export function useBuilderColumnResize({
             return;
         }
 
-        dispatch({
-            type: "UPDATE_NODE_PROPS",
-            nodeId: state.resize.nodeId,
-            props: {
-                ...node.props,
-                span: updatedCurrentSpan,
-            },
-        });
+
 
         const nextNode = findNodeById(
             state.document,
@@ -153,12 +146,11 @@ export function useBuilderColumnResize({
         if (!nextNode) return;
 
         dispatch({
-            type: "UPDATE_NODE_PROPS",
-            nodeId: state.resize.nextNodeId,
-            props: {
-                ...nextNode.props,
-                span: updatedNextSpan,
-            },
+            type: "UPDATE_COLUMN_RESIZE",
+            nodeId: state.resize.nodeId,
+            nextNodeId: state.resize.nextNodeId,
+            span: updatedCurrentSpan,
+            nextSpan: updatedNextSpan,
         });
     }
 

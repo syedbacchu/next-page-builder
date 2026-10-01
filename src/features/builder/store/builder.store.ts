@@ -45,6 +45,7 @@ export interface BuilderState {
         startX: number | null;
         startSpan: number | null;
         nextStartSpan: number | null;
+        startDocument: BuilderDocument | null;
     };
 }
 
@@ -122,6 +123,12 @@ export type BuilderAction =
 }
     | {
     type: "END_COLUMN_RESIZE";
+}| {
+    type: "UPDATE_COLUMN_RESIZE";
+    nodeId: string;
+    nextNodeId: string;
+    span: number;
+    nextSpan: number;
 };
 
 export function createInitialBuilderState(
@@ -148,6 +155,7 @@ export function createInitialBuilderState(
             startX: null,
             startSpan: null,
             nextStartSpan: null,
+            startDocument: null,
         },
         drag: {
             activeNodeId: null,
@@ -156,6 +164,13 @@ export function createInitialBuilderState(
     };
 }
 
+function getDefaultInsertTarget(
+    document: BuilderDocument,
+): string {
+    const firstContainer = findFirstContainer(document);
+
+    return firstContainer?.id ?? document.id;
+}
 function commitDocument(
     state: BuilderState,
     document: BuilderDocument,
@@ -430,6 +445,25 @@ export function builderReducer(
             return {
                 ...state,
                 document: previousDocument,
+
+                selectedNodeId: null,
+                insertTargetNodeId: getDefaultInsertTarget(previousDocument),
+
+                drag: {
+                    activeNodeId: null,
+                    dropPosition: null,
+                },
+
+                resize: {
+                    active: false,
+                    nodeId: null,
+                    nextNodeId: null,
+                    startX: null,
+                    startSpan: null,
+                    nextStartSpan: null,
+                    startDocument: null,
+                },
+
                 history: {
                     past: state.history.past.slice(0, -1),
                     future: [
@@ -449,6 +483,25 @@ export function builderReducer(
             return {
                 ...state,
                 document: nextDocument,
+
+                selectedNodeId: null,
+                insertTargetNodeId: getDefaultInsertTarget(nextDocument),
+
+                drag: {
+                    activeNodeId: null,
+                    dropPosition: null,
+                },
+
+                resize: {
+                    active: false,
+                    nodeId: null,
+                    nextNodeId: null,
+                    startX: null,
+                    startSpan: null,
+                    nextStartSpan: null,
+                    startDocument: null,
+                },
+
                 history: {
                     past: [
                         ...state.history.past,
@@ -598,11 +651,55 @@ export function builderReducer(
                     startX: action.startX,
                     startSpan: action.startSpan,
                     nextStartSpan: action.nextStartSpan,
+                    startDocument: state.document,
                 },
             };
-        case "END_COLUMN_RESIZE":
+        case "END_COLUMN_RESIZE": {
+            if (
+                !state.resize.active ||
+                !state.resize.startDocument
+            ) {
+                return {
+                    ...state,
+                    resize: {
+                        active: false,
+                        nodeId: null,
+                        nextNodeId: null,
+                        startX: null,
+                        startSpan: null,
+                        nextStartSpan: null,
+                        startDocument: null,
+                    },
+                };
+            }
+
+            const hasChanged =
+                state.document !== state.resize.startDocument;
+
+            if (!hasChanged) {
+                return {
+                    ...state,
+                    resize: {
+                        active: false,
+                        nodeId: null,
+                        nextNodeId: null,
+                        startX: null,
+                        startSpan: null,
+                        nextStartSpan: null,
+                        startDocument: null,
+                    },
+                };
+            }
+
             return {
                 ...state,
+                history: {
+                    past: [
+                        ...state.history.past,
+                        state.resize.startDocument,
+                    ],
+                    future: [],
+                },
                 resize: {
                     active: false,
                     nodeId: null,
@@ -610,8 +707,51 @@ export function builderReducer(
                     startX: null,
                     startSpan: null,
                     nextStartSpan: null,
+                    startDocument: null,
                 },
             };
+        }
+        case "UPDATE_COLUMN_RESIZE": {
+            const currentDocument = state.document;
+
+            const currentNode = findNodeById(
+                currentDocument,
+                action.nodeId,
+            );
+
+            const nextNode = findNodeById(
+                currentDocument,
+                action.nextNodeId,
+            );
+
+            if (!currentNode || !nextNode) {
+                return state;
+            }
+
+            const document = {
+                ...currentDocument,
+                children: currentDocument.children.map((child) =>
+                    updateNodeProps(
+                        updateNodeProps(
+                            child,
+                            action.nodeId,
+                            {
+                                span: action.span,
+                            },
+                        ),
+                        action.nextNodeId,
+                        {
+                            span: action.nextSpan,
+                        },
+                    ),
+                ),
+            };
+
+            return {
+                ...state,
+                document,
+            };
+        }
         default:
             return state;
     }

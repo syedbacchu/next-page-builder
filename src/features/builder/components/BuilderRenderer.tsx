@@ -13,6 +13,7 @@ import {useBuilderDragDrop} from "@/features/builder/hooks/use-builder-drag-drop
 import { useBuilderNodeSelection } from "@/features/builder/hooks/use-builder-node-selection";
 import { useBuilderColumnResize } from "@/features/builder/hooks/use-builder-column-resize";
 import { findParentNode } from "@/features/builder/utils/find-parent-node";
+import { getColumnSpan } from "@/features/builder/utils/get-column-span";
 
 interface BuilderRendererProps {
     node: BuilderNode;
@@ -130,27 +131,13 @@ export function BuilderRenderer({
 
                 ...(node.type === "column"
                     ? {
-                        gridColumn: `span ${
-                            Math.min(
-                                12,
-                                Math.max(
-                                    1,
-                                    Number(
-                                        node.props.span ?? 12,
-                                    ),
-                                ),
-                            )
-                        } / span ${
-                            Math.min(
-                                12,
-                                Math.max(
-                                    1,
-                                    Number(
-                                        node.props.span ?? 12,
-                                    ),
-                                ),
-                            )
-                        }`,
+                        gridColumn: `span ${getColumnSpan(
+                            node.props.span,
+                            state.viewport,
+                        )} / span ${getColumnSpan(
+                            node.props.span,
+                            state.viewport,
+                        )}`,
                     }
                     : {}),
             }}
