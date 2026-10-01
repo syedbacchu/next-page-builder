@@ -12,6 +12,7 @@ import { BuilderNodeWrapper } from "@/features/builder/components/BuilderNodeWra
 import {useBuilderDragDrop} from "@/features/builder/hooks/use-builder-drag-drop";
 import { useBuilderNodeSelection } from "@/features/builder/hooks/use-builder-node-selection";
 import { useBuilderColumnResize } from "@/features/builder/hooks/use-builder-column-resize";
+import { findParentNode } from "@/features/builder/utils/find-parent-node";
 
 interface BuilderRendererProps {
     node: BuilderNode;
@@ -39,6 +40,27 @@ export function BuilderRenderer({
         handleResizeMove,
         handleResizeEnd,
     } = useBuilderColumnResize({ node });
+
+    const parentNode = findParentNode(
+        state.document,
+        node.id,
+    );
+
+    const columnSiblings =
+        parentNode?.type === "row"
+            ? parentNode.children.filter(
+                (child) => child.type === "column",
+            )
+            : [];
+
+    const columnIndex = columnSiblings.findIndex(
+        (child) => child.id === node.id,
+    );
+
+    const isResizableColumn =
+        node.type === "column" &&
+        columnIndex !== -1 &&
+        columnIndex < columnSiblings.length - 1;
 
     const definition = componentRegistry[node.type];
 
@@ -143,7 +165,7 @@ export function BuilderRenderer({
         >
             {isSelected && <BuilderNodeToolbar />}
 
-            {node.type === "column" && (
+            {isResizableColumn && (
                 <BuilderColumnResizeHandle
                     onResizeStart={handleResizeStart}
                     onResizeEnd={handleResizeEnd}

@@ -1,18 +1,15 @@
 import type { BuilderNode } from "@/features/builder/types/builder.types";
 
 export function findParentNode(
-    current: BuilderNode,
-    targetNodeId: string,
+    node: BuilderNode,
+    childId: string,
 ): BuilderNode | null {
-    for (const child of current.children) {
-        if (child.id === targetNodeId) {
-            return current;
+    for (const child of node.children) {
+        if (child.id === childId) {
+            return node;
         }
 
-        const parent = findParentNode(
-            child,
-            targetNodeId,
-        );
+        const parent = findParentNode(child, childId);
 
         if (parent) {
             return parent;

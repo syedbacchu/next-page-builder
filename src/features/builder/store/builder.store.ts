@@ -41,9 +41,11 @@ export interface BuilderState {
     resize: {
         active: boolean;
         nodeId: string | null;
+        nextNodeId: string | null;
         startX: number | null;
         startSpan: number | null;
-    },
+        nextStartSpan: number | null;
+    };
 }
 
 export type BuilderAction =
@@ -113,8 +115,10 @@ export type BuilderAction =
 }| {
     type: "START_COLUMN_RESIZE";
     nodeId: string;
+    nextNodeId: string;
     startX: number;
     startSpan: number;
+    nextStartSpan: number;
 }
     | {
     type: "END_COLUMN_RESIZE";
@@ -140,8 +144,10 @@ export function createInitialBuilderState(
         resize: {
             active: false,
             nodeId: null,
+            nextNodeId: null,
             startX: null,
             startSpan: null,
+            nextStartSpan: null,
         },
         drag: {
             activeNodeId: null,
@@ -588,8 +594,10 @@ export function builderReducer(
                 resize: {
                     active: true,
                     nodeId: action.nodeId,
+                    nextNodeId: action.nextNodeId,
                     startX: action.startX,
                     startSpan: action.startSpan,
+                    nextStartSpan: action.nextStartSpan,
                 },
             };
         case "END_COLUMN_RESIZE":
@@ -598,8 +606,10 @@ export function builderReducer(
                 resize: {
                     active: false,
                     nodeId: null,
+                    nextNodeId: null,
                     startX: null,
                     startSpan: null,
+                    nextStartSpan: null,
                 },
             };
         default:

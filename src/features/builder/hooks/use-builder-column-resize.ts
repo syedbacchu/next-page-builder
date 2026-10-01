@@ -34,11 +34,54 @@ export function useBuilderColumnResize({
     ) {
         event.stopPropagation();
 
+        const currentElement = document.querySelector(
+            `[data-builder-node-id="${node.id}"]`,
+        );
+
+        if (!currentElement) return;
+
+        const rowElement = currentElement.parentElement;
+
+        if (!rowElement) return;
+
+        const columnElements = Array.from(
+            rowElement.children,
+        ).filter((element) =>
+            element.hasAttribute("data-builder-node-id"),
+        );
+
+        const currentIndex = columnElements.findIndex(
+            (element) =>
+                element.getAttribute("data-builder-node-id") ===
+                node.id,
+        );
+
+        if (currentIndex === -1) return;
+
+        const nextElement =
+            columnElements[currentIndex + 1];
+
+        if (!nextElement) return;
+
+        const nextNodeId =
+            nextElement.getAttribute("data-builder-node-id");
+
+        if (!nextNodeId) return;
+
+        const nextNode = findNodeById(
+            state.document,
+            nextNodeId,
+        );
+
+        if (!nextNode) return;
+
         dispatch({
             type: "START_COLUMN_RESIZE",
             nodeId: node.id,
+            nextNodeId: nextNode.id,
             startX: event.clientX,
             startSpan: Number(node.props.span ?? 12),
+            nextStartSpan: Number(nextNode.props.span ?? 12),
         });
     }
 
@@ -48,7 +91,9 @@ export function useBuilderColumnResize({
         if (
             state.resize.nodeId !== node.id ||
             state.resize.startX === null ||
-            state.resize.startSpan === null
+            state.resize.startSpan === null ||
+            state.resize.nextNodeId === null ||
+            state.resize.nextStartSpan === null
         ) {
             return;
         }
@@ -68,81 +113,48 @@ export function useBuilderColumnResize({
 
         if (rowWidth <= 0) return;
 
-        const columnElements = Array.from(
-            rowElement.children,
-        ).filter((element) =>
-            element.hasAttribute("data-builder-node-id"),
+        const newCurrentSpan = calculateColumnSpan(
+            clientX - state.resize.startX,
+            rowWidth,
+            state.resize.startSpan,
         );
-
-        const currentIndex = columnElements.findIndex(
-            (element) =>
-                element.getAttribute(
-                    "data-builder-node-id",
-                ) === node.id,
-        );
-
-        if (currentIndex === -1) return;
-
-        const nextElement =
-            columnElements[currentIndex + 1];
-
-        if (!nextElement) return;
-
-        const nextNodeId =
-            nextElement.getAttribute(
-                "data-builder-node-id",
-            );
-
-        if (!nextNodeId) return;
-
-        const nextNode = findNodeById(
-            state.document,
-            nextNodeId,
-        );
-
-        if (!nextNode) return;
-
-        const currentSpan = Number(
-            node.props.span ?? 12,
-        );
-
-        const nextSpan = Number(
-            nextNode.props.span ?? 12,
-        );
-
-        const newCurrentSpan =
-            calculateColumnSpan(
-                clientX - state.resize.startX,
-                rowWidth,
-                state.resize.startSpan,
-            );
 
         const [updatedCurrentSpan, updatedNextSpan] =
             resizeColumnPair(
-                [currentSpan, nextSpan],
+                [
+                    state.resize.startSpan,
+                    state.resize.nextStartSpan,
+                ],
                 0,
                 newCurrentSpan,
             );
 
         if (
-            updatedCurrentSpan === currentSpan &&
-            updatedNextSpan === nextSpan
+            updatedCurrentSpan === state.resize.startSpan &&
+            updatedNextSpan === state.resize.nextStartSpan
         ) {
             return;
         }
 
         dispatch({
             type: "UPDATE_NODE_PROPS",
-            nodeId: node.id,
+            nodeId: state.resize.nodeId,
             props: {
                 ...node.props,
                 span: updatedCurrentSpan,
             },
         });
 
+        const nextNode = findNodeById(
+            state.document,
+            state.resize.nextNodeId,
+        );
+
+        if (!nextNode) return;
+
         dispatch({
             type: "UPDATE_NODE_PROPS",
-            nodeId: nextNode.id,
+            nodeId: state.resize.nextNodeId,
             props: {
                 ...nextNode.props,
                 span: updatedNextSpan,
