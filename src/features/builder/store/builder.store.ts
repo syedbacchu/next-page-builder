@@ -20,7 +20,8 @@ import { canDropNode } from "@/features/builder/utils/can-drop-node";
 import { selectNode } from "@/features/builder/utils/select-node";
 import { findParentNode } from "@/features/builder/utils/find-parent-node";
 import {BuilderViewport} from "@/features/builder/types/builder-viewport.types";
-
+import { setColumnSpan } from "@/features/builder/utils/set-column-span";
+import { setResponsiveColumnLayout } from "@/features/builder/utils/set-responsive-column-layout";
 export interface BuilderHistory {
     past: BuilderDocument[];
     future: BuilderDocument[];
@@ -124,11 +125,19 @@ export type BuilderAction =
     | {
     type: "END_COLUMN_RESIZE";
 }| {
+
     type: "UPDATE_COLUMN_RESIZE";
     nodeId: string;
     nextNodeId: string;
     span: number;
     nextSpan: number;
+    viewport: BuilderViewport;
+
+}| {
+    type: "SET_RESPONSIVE_COLUMN_LAYOUT";
+    rowId: string;
+    viewport: BuilderViewport;
+    columnsPerRow: number;
 };
 
 export function createInitialBuilderState(
@@ -736,12 +745,20 @@ export function builderReducer(
                             child,
                             action.nodeId,
                             {
-                                span: action.span,
+                                span: setColumnSpan(
+                                    currentNode.props.span,
+                                    action.viewport,
+                                    action.span,
+                                ),
                             },
                         ),
                         action.nextNodeId,
                         {
-                            span: action.nextSpan,
+                            span: setColumnSpan(
+                                nextNode.props.span,
+                                action.viewport,
+                                action.nextSpan,
+                            ),
                         },
                     ),
                 ),
@@ -751,6 +768,63 @@ export function builderReducer(
                 ...state,
                 document,
             };
+        }
+        case "SET_RESPONSIVE_COLUMN_LAYOUT": {
+            const row = findNodeById(
+                state.document,
+                action.rowId,
+            );
+
+            if (!row || row.type !== "row") {
+                return state;
+            }
+
+            const columns = row.children.filter(
+                (child) => child.type === "column",
+            );
+
+            if (columns.length === 0) {
+                return state;
+            }
+
+            const updatedColumns = setResponsiveColumnLayout(
+                columns,
+                action.viewport,
+                action.columnsPerRow,
+            );
+
+            let columnIndex = 0;
+
+            const updatedRow = {
+                ...row,
+                children: row.children.map((child) => {
+                    if (child.type !== "column") {
+                        return child;
+                    }
+
+                    return updatedColumns[columnIndex++];
+                }),
+            };
+
+            const updateRow = (
+                node: BuilderNode,
+            ): BuilderNode => {
+                if (node.id === action.rowId) {
+                    return updatedRow;
+                }
+
+                return {
+                    ...node,
+                    children: node.children.map(updateRow),
+                };
+            };
+
+            const document: BuilderDocument = {
+                ...state.document,
+                children: state.document.children.map(updateRow),
+            };
+
+            return commitDocument(state, document);
         }
         default:
             return state;

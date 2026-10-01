@@ -7,6 +7,7 @@ import { useBuilder } from "@/features/builder/store/BuilderProvider";
 import { calculateColumnSpan } from "@/features/builder/utils/calculate-column-span";
 import { resizeColumnPair } from "@/features/builder/utils/resize-column";
 import { findNodeById } from "@/features/builder/utils/find-node";
+import { getColumnSpan } from "@/features/builder/utils/get-column-span";
 
 interface UseBuilderColumnResizeOptions {
     node: BuilderNode;
@@ -80,8 +81,14 @@ export function useBuilderColumnResize({
             nodeId: node.id,
             nextNodeId: nextNode.id,
             startX: event.clientX,
-            startSpan: Number(node.props.span ?? 12),
-            nextStartSpan: Number(nextNode.props.span ?? 12),
+            startSpan: getColumnSpan(
+                node.props.span,
+                state.viewport,
+            ),
+            nextStartSpan: getColumnSpan(
+                nextNode.props.span,
+                state.viewport,
+            ),
         });
     }
 
@@ -151,6 +158,7 @@ export function useBuilderColumnResize({
             nextNodeId: state.resize.nextNodeId,
             span: updatedCurrentSpan,
             nextSpan: updatedNextSpan,
+            viewport: state.viewport,
         });
     }
 
