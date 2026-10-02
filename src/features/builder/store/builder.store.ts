@@ -23,7 +23,7 @@ import {
 import {handleNodeAction} from "@/features/builder/store/builder.nodes";
 import {handleDragAction} from "@/features/builder/store/builder.drag";
 import {handleResizeAction} from "@/features/builder/store/builder.resize";
-
+import { setResponsiveStyle } from "@/features/builder/utils/set-responsive-style";
 
 export function createInitialBuilderState(
     document: BuilderDocument,
@@ -97,7 +97,12 @@ export function builderReducer(
                     updateNodeStyles(
                         child,
                         action.nodeId,
-                        action.styles,
+                        setResponsiveStyle(
+                            child.styles,
+                            action.viewport,
+                            action.key,
+                            action.value,
+                        ),
                     ),
                 ),
             });

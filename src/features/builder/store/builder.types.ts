@@ -49,7 +49,9 @@ export type BuilderAction =
     | {
     type: "UPDATE_NODE_STYLES";
     nodeId: string;
-    styles: BuilderNodeStyles;
+    viewport: BuilderViewport;
+    key: string;
+    value: string;
 }
     | {
     type: "ADD_NODE";
