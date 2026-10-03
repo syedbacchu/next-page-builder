@@ -248,8 +248,6 @@ export function useBuilderDragDrop({
                     node.type,
                 )
             ) {
-
-
                 return;
             }
 
@@ -263,7 +261,6 @@ export function useBuilderDragDrop({
                 parentId: node.id,
                 node: newNode,
             });
-
 
             return;
         }
@@ -284,15 +281,13 @@ export function useBuilderDragDrop({
         /*
          * Never drop a node onto itself.
          */
-
         if (activeNodeId === node.id) {
             return;
         }
 
         /*
-         * Final validation.
+         * Final drop position.
          */
-
         const dropPosition =
             state.drag.dropPosition;
 
@@ -300,6 +295,19 @@ export function useBuilderDragDrop({
             return;
         }
 
+        /*
+         * Make sure this drop handler
+         * owns the current drop target.
+         */
+        if (
+            dropPosition.targetNodeId !== node.id
+        ) {
+            return;
+        }
+
+        /*
+         * Final validation.
+         */
         if (
             !canDropNode(
                 state.document,
@@ -311,10 +319,8 @@ export function useBuilderDragDrop({
         }
 
         /*
-         * DROP_NODE will perform the actual move
-         * through builder.drag.ts.
+         * DROP_NODE performs the actual move.
          */
-
         dispatch({
             type: "DROP_NODE",
         });
@@ -342,32 +348,35 @@ export function useBuilderDragDrop({
         }
 
         if (activeNodeId === node.id) {
+            event.dataTransfer.dropEffect = "none";
             return;
         }
-
-        event.dataTransfer.dropEffect = "move";
 
         const position: DropPosition = {
             type: "inside",
             targetNodeId: node.id,
         };
 
-        if (
-            !canDropNode(
-                state.document,
-                activeNodeId,
-                position,
-            )
-        ) {
+        const allowed = canDropNode(
+            state.document,
+            activeNodeId,
+            position,
+        );
+
+        if (!allowed) {
             event.dataTransfer.dropEffect = "none";
             return;
         }
+
+        event.dataTransfer.dropEffect = "move";
 
         dispatch({
             type: "SET_DROP_POSITION",
             position,
         });
     }
+
+
     return {
         handleDragStart,
         handleDragOver,

@@ -274,10 +274,23 @@ export function BuilderRenderer({
                 {node.type === "column" && node.children.length === 0 ? (
                     <BuilderColumnDropZone
                         columnId={node.id}
+                        empty
                         onDragOver={handleColumnDragOver}
                         onDrop={handleDrop}
-                    />
+                        onClick={(event) => {
+                            event.stopPropagation();
 
+                            dispatch({
+                                type: "SELECT_NODE",
+                                nodeId: node.id,
+                            });
+
+                            dispatch({
+                                type: "SET_INSERT_TARGET",
+                                nodeId: node.id,
+                            });
+                        }}
+                    />
                 ) : null}
 
                 {children}
