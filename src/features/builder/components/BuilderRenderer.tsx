@@ -20,6 +20,7 @@ import {
 } from "@/features/builder/types/builder.types";
 import type { DropPosition } from "@/features/builder/types/drop-position.types";
 import { BuilderColumnDropZone } from "@/features/builder/components/BuilderColumnDropZone";
+import type { DragEvent } from "react";
 
 interface BuilderRendererProps {
     node: BuilderNode;
@@ -35,7 +36,6 @@ export function BuilderRenderer({
         handleDragOver,
         handleDrop,
         handleDragEnd,
-        handleColumnDragOver
     } = useBuilderDragDrop({ node });
 
     const {
@@ -226,6 +226,61 @@ export function BuilderRenderer({
 
             onDragStart={handleDragStart}
             onDragOver={handleDragOver}
+            onDragOverCapture={
+                node.type === "column"
+                    ? (event: DragEvent<HTMLDivElement>) => {
+                        const activeNodeId =
+                            state.drag.activeNodeId;
+
+                        if (!activeNodeId) {
+                            return;
+                        }
+
+                        if (activeNodeId === node.id) {
+                            return;
+                        }
+
+                        /*
+                         * Only handle the empty-area of the column.
+                         * Child nodes will keep their own drag behavior.
+                         */
+                        if (
+                            event.target !== event.currentTarget &&
+                            !(event.target as HTMLElement).closest(
+                                "[data-builder-column-drop-zone]",
+                            )
+                        ) {
+                            return;
+                        }
+
+                        const position: DropPosition = {
+                            type: "inside",
+                            targetNodeId: node.id,
+                        };
+
+                        if (
+                            !canDropNode(
+                                state.document,
+                                activeNodeId,
+                                position,
+                            )
+                        ) {
+                            event.dataTransfer.dropEffect = "none";
+                            return;
+                        }
+
+                        event.preventDefault();
+                        event.stopPropagation();
+
+                        event.dataTransfer.dropEffect = "move";
+
+                        dispatch({
+                            type: "SET_DROP_POSITION",
+                            position,
+                        });
+                    }
+                    : undefined
+            }
             onDrop={handleDrop}
             onDragEnd={handleDragEnd}
             onClick={handleNodeClick}
@@ -275,7 +330,7 @@ export function BuilderRenderer({
                     <BuilderColumnDropZone
                         columnId={node.id}
                         empty
-                        onDragOver={handleColumnDragOver}
+                        onDragOver={handleDragOver}
                         onDrop={handleDrop}
                         onClick={(event) => {
                             event.stopPropagation();
@@ -298,7 +353,7 @@ export function BuilderRenderer({
                 {node.type === "column" && node.children.length > 0 ? (
                     <BuilderColumnDropZone
                         columnId={node.id}
-                        onDragOver={handleColumnDragOver}
+                        onDragOver={handleDragOver}
                         onDrop={handleDrop}
                     />
                 ) : null}

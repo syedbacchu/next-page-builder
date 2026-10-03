@@ -27,6 +27,10 @@ interface BuilderNodeWrapperProps {
         event: DragEvent<HTMLDivElement>,
     ) => void;
 
+    onDragOverCapture?: (
+        event: DragEvent<HTMLDivElement>,
+    ) => void;
+
     onDrop: (
         event: DragEvent<HTMLDivElement>,
     ) => void;
@@ -46,6 +50,7 @@ export function BuilderNodeWrapper({
                                        onClick,
                                        onDragStart,
                                        onDragOver,
+                                       onDragOverCapture,
                                        onDrop,
                                        onDragEnd,
                                    }: BuilderNodeWrapperProps) {
@@ -61,6 +66,7 @@ export function BuilderNodeWrapper({
             draggable
             onDragStart={onDragStart}
             onDragOver={onDragOver}
+            onDragOverCapture={onDragOverCapture}
             onDrop={onDrop}
             onDragEnd={onDragEnd}
             onClick={onClick}
