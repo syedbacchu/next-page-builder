@@ -8,6 +8,7 @@ interface BuilderNodeWrapperProps {
     isSelected: boolean;
     children: ReactNode;
     style?: CSSProperties;
+    className?: string;
     onClick: (
         event: React.MouseEvent<HTMLDivElement>,
     ) => void;

@@ -24,6 +24,9 @@ import {handleNodeAction} from "@/features/builder/store/builder.nodes";
 import {handleDragAction} from "@/features/builder/store/builder.drag";
 import {handleResizeAction} from "@/features/builder/store/builder.resize";
 import { setResponsiveStyle } from "@/features/builder/utils/set-responsive-style";
+import {
+    updateNodeInteractionStyles,
+} from "@/features/builder/utils/update-node-interaction-styles";
 
 export function createInitialBuilderState(
     document: BuilderDocument,
@@ -103,6 +106,21 @@ export function builderReducer(
                             action.key,
                             action.value,
                         ),
+                    ),
+                ),
+            });
+        case "UPDATE_NODE_INTERACTION_STYLES":
+            return commitDocument(state, {
+                ...state.document,
+
+                children: state.document.children.map((child) =>
+                    updateNodeInteractionStyles(
+                        child,
+                        action.nodeId,
+                        action.interaction,
+                        action.viewport,
+                        action.key,
+                        action.value,
                     ),
                 ),
             });

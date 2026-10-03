@@ -22,6 +22,16 @@ export interface BuilderResponsiveStyles {
     mobile?: Record<string, BuilderStyleValue>;
 }
 
+export type BuilderInteractionStyles = {
+    hover?: BuilderResponsiveStyles;
+};
+
+export interface BuilderNodeInteraction {
+    styles?: {
+        hover?: BuilderResponsiveStyles;
+    };
+}
+
 export type BuilderNodeStyles =
     | Record<string, string>
     | BuilderResponsiveStyles;
@@ -60,6 +70,7 @@ export interface BuilderNode {
     type: BuilderNodeType;
     props: Record<string, unknown>;
     styles?: BuilderNodeStyles;
+    interactions?: BuilderNodeInteraction;
     children: BuilderNode[];
 }
 

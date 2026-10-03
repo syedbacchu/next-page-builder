@@ -14,6 +14,10 @@ import { useBuilderNodeSelection } from "@/features/builder/hooks/use-builder-no
 import { useBuilderColumnResize } from "@/features/builder/hooks/use-builder-column-resize";
 import { findParentNode } from "@/features/builder/utils/find-parent-node";
 import { getColumnSpan } from "@/features/builder/utils/get-column-span";
+import { getHoverStyles } from "@/features/builder/utils/get-hover-styles";
+import {
+    getStyleValue,
+} from "@/features/builder/types/builder.types";
 
 interface BuilderRendererProps {
     node: BuilderNode;
@@ -118,16 +122,95 @@ export function BuilderRenderer({
         isLayoutNode &&
         node.children.length === 0;
 
+    const hoverStyles = getHoverStyles(
+        node,
+        state.viewport,
+    );
+    const translateX =
+        getStyleValue(
+            node.styles,
+            "--translate-x",
+            state.viewport,
+        ) ?? "0px";
+
+    const translateY =
+        getStyleValue(
+            node.styles,
+            "--translate-y",
+            state.viewport,
+        ) ?? "0px";
+
+    const rotate =
+        getStyleValue(
+            node.styles,
+            "--rotate",
+            state.viewport,
+        ) ?? "0deg";
+
+    const transform =
+        getStyleValue(
+            node.styles,
+            "transform",
+            state.viewport,
+        );
+
+    const finalTransform =
+        transform ||
+        `translate(${translateX}, ${translateY}) rotate(${rotate})`;
+    const hoverCss = Object.entries(hoverStyles)
+        .map(
+            ([property, value]) =>
+                `${property}: ${value} !important;`,
+        )
+        .join("\n");
+
     return (
+        <>
+            {hoverCss && (
+                <style>
+                    {`
+                    .builder-node-${node.id}:hover {
+                        ${hoverCss}
+                    }
+                `}
+                </style>
+            )}
         <BuilderNodeWrapper
             nodeId={node.id}
             nodeType={node.type}
             isSelected={isSelected}
+            className={`builder-node-${node.id}`}
             style={{
                 ...getNodeStyles(
                     node.styles,
                     state.viewport,
                 ),
+
+                transform:
+                    finalTransform !==
+                    "translate(0px, 0px) rotate(0deg)"
+                        ? finalTransform
+                        : undefined,
+
+                ...(node.interactions?.styles?.hover
+                    ? {
+                        transitionDuration:
+                            node.interactions.styles.hover[
+                                state.viewport
+                                ]?.["transition-duration"] ??
+                            node.interactions.styles.hover.desktop?.[
+                                "transition-duration"
+                                ],
+
+                        transitionTimingFunction:
+                            node.interactions.styles.hover[
+                                state.viewport
+                                ]?.["transition-timing-function"] ??
+                            node.interactions.styles.hover.desktop?.[
+                                "transition-timing-function"
+                                ],
+                    }
+                    : {}),
 
                 ...(node.type === "column"
                     ? {
@@ -235,5 +318,6 @@ export function BuilderRenderer({
                 )}
             </Component>
         </BuilderNodeWrapper>
+            </>
     );
 }

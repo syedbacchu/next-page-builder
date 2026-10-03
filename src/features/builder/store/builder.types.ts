@@ -122,4 +122,11 @@ export type BuilderAction =
     rowId: string;
     viewport: BuilderViewport;
     columnsPerRow: number;
+} | {
+    type: "UPDATE_NODE_INTERACTION_STYLES";
+    nodeId: string;
+    interaction: "hover";
+    viewport: BuilderViewport;
+    key: string;
+    value: string;
 };

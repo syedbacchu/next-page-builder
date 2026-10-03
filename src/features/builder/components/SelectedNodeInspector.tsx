@@ -12,6 +12,10 @@ import { DimensionsControl } from "@/features/builder/components/inspector/Dimen
 import { NodeSchemaFields } from "@/features/builder/components/inspector/NodeSchemaFields";
 import { TypographyControl } from "@/features/builder/components/inspector/TypographyControl";
 import { BackgroundControl } from "@/features/builder/components/inspector/BackgroundControl";
+import { BorderControl } from "@/features/builder/components/inspector/BorderControl";
+import { ShadowControl } from "@/features/builder/components/inspector/ShadowControl";
+import { HoverControl } from "@/features/builder/components/inspector/HoverControl";
+import { EffectsControl } from "@/features/builder/components/inspector/EffectsControl";
 
 export function SelectedNodeInspector() {
     const { state, dispatch } = useBuilder();
@@ -253,6 +257,54 @@ export function SelectedNodeInspector() {
                 />
 
                 <BackgroundControl
+                    node={node}
+                    viewport={state.viewport}
+                    onChange={(key, value) =>
+                        updateField(
+                            key,
+                            value,
+                            "styles",
+                        )
+                    }
+                />
+                <BorderControl
+                    node={node}
+                    viewport={state.viewport}
+                    onChange={(key, value) =>
+                        updateField(
+                            key,
+                            value,
+                            "styles",
+                        )
+                    }
+                />
+                <ShadowControl
+                    node={node}
+                    viewport={state.viewport}
+                    onChange={(key, value) =>
+                        updateField(
+                            key,
+                            value,
+                            "styles",
+                        )
+                    }
+                />
+
+                <HoverControl
+                    node={node}
+                    viewport={state.viewport}
+                    onChange={(key, value) =>
+                        dispatch({
+                            type: "UPDATE_NODE_INTERACTION_STYLES",
+                            nodeId: node.id,
+                            interaction: "hover",
+                            viewport: state.viewport,
+                            key,
+                            value,
+                        })
+                    }
+                />
+                <EffectsControl
                     node={node}
                     viewport={state.viewport}
                     onChange={(key, value) =>
