@@ -157,6 +157,7 @@ export function BuilderRenderer({
     const finalTransform =
         transform ||
         `translate(${translateX}, ${translateY}) rotate(${rotate})`;
+
     const hoverCss = Object.entries(hoverStyles)
         .map(
             ([property, value]) =>
