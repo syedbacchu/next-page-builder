@@ -3,8 +3,7 @@ import type {
     BuilderNode,
 } from "@/features/builder/types/builder.types";
 import type { DropPosition } from "@/features/builder/types/drop-position.types";
-import {findNodeById} from "@/features/builder/utils/find-node";
-import { componentRegistry } from "@/features/builder/registry/component-registry";
+import { findNodeById } from "@/features/builder/utils/find-node";
 import { canDropNode } from "@/features/builder/utils/can-drop-node";
 
 function removeNode(
@@ -14,13 +13,19 @@ function removeNode(
     node: BuilderNode;
     removedNode: BuilderNode | null;
 } {
-    const childIndex = node.children.findIndex(
-        (child) => child.id === nodeId,
-    );
+    const childIndex =
+        node.children.findIndex(
+            (child) => child.id === nodeId,
+        );
 
     if (childIndex !== -1) {
         const children = [...node.children];
-        const [removedNode] = children.splice(childIndex, 1);
+
+        const [removedNode] =
+            children.splice(
+                childIndex,
+                1,
+            );
 
         return {
             node: {
@@ -31,19 +36,30 @@ function removeNode(
         };
     }
 
-    let removedNode: BuilderNode | null = null;
+    let removedNode:
+        | BuilderNode
+        | null = null;
 
-    const children = node.children.map((child) => {
-        if (removedNode) return child;
+    const children = node.children.map(
+        (child) => {
+            if (removedNode) {
+                return child;
+            }
 
-        const result = removeNode(child, nodeId);
+            const result =
+                removeNode(
+                    child,
+                    nodeId,
+                );
 
-        if (result.removedNode) {
-            removedNode = result.removedNode;
-        }
+            if (result.removedNode) {
+                removedNode =
+                    result.removedNode;
+            }
 
-        return result.node;
-    });
+            return result.node;
+        },
+    );
 
     return {
         node: {
@@ -54,35 +70,30 @@ function removeNode(
     };
 }
 
-function containsNode(
-    node: BuilderNode,
-    nodeId: string,
-): boolean {
-    if (node.id === nodeId) {
-        return true;
-    }
-
-    return node.children.some((child) =>
-        containsNode(child, nodeId),
-    );
-}
 function insertNode(
     node: BuilderNode,
     newNode: BuilderNode,
     position: DropPosition,
 ): BuilderNode {
-    if (position.type === "inside") {
-        if (node.id === position.targetNodeId) {
-            return {
-                ...node,
-                children: [...node.children, newNode],
-            };
-        }
+    if (
+        position.type === "inside" &&
+        node.id === position.targetNodeId
+    ) {
+        return {
+            ...node,
+            children: [
+                ...node.children,
+                newNode,
+            ],
+        };
     }
 
-    const targetIndex = node.children.findIndex(
-        (child) => child.id === position.targetNodeId,
-    );
+    const targetIndex =
+        node.children.findIndex(
+            (child) =>
+                child.id ===
+                position.targetNodeId,
+        );
 
     if (targetIndex !== -1) {
         const children = [...node.children];
@@ -92,7 +103,11 @@ function insertNode(
                 ? targetIndex
                 : targetIndex + 1;
 
-        children.splice(insertIndex, 0, newNode);
+        children.splice(
+            insertIndex,
+            0,
+            newNode,
+        );
 
         return {
             ...node,
@@ -100,11 +115,36 @@ function insertNode(
         };
     }
 
+    let changed = false;
+
+    const children = node.children.map(
+        (child) => {
+            if (changed) {
+                return child;
+            }
+
+            const updated =
+                insertNode(
+                    child,
+                    newNode,
+                    position,
+                );
+
+            if (updated !== child) {
+                changed = true;
+            }
+
+            return updated;
+        },
+    );
+
+    if (!changed) {
+        return node;
+    }
+
     return {
         ...node,
-        children: node.children.map((child) =>
-            insertNode(child, newNode, position),
-        ),
+        children,
     };
 }
 
@@ -117,28 +157,112 @@ export function moveNodeToPosition(
         return document;
     }
 
-    const sourceNode = findNodeById(document, nodeId);
+    if (
+        position.targetNodeId === nodeId
+    ) {
+        return document;
+    }
+
+    const sourceNode =
+        findNodeById(
+            document,
+            nodeId,
+        );
 
     if (!sourceNode) {
         return document;
     }
 
-    if (!canDropNode(document, nodeId, position)) {
+    if (
+        !canDropNode(
+            document,
+            nodeId,
+            position,
+        )
+    ) {
         return document;
     }
 
+    /*
+     * Remove source node.
+     */
     const {
-        node: documentWithoutNode,
+        node: documentWithoutNodeData,
         removedNode,
-    } = removeNode(document, nodeId);
+    } = removeNode(
+        document,
+        nodeId,
+    );
 
     if (!removedNode) {
         return document;
     }
 
-    return insertNode(
-        documentWithoutNode,
-        removedNode,
-        position,
-    ) as BuilderDocument;
+    /*
+     * Re-create the root as BuilderDocument.
+     *
+     * removeNode works with BuilderNode recursively,
+     * while the root must remain type "page".
+     */
+    const documentWithoutNode: BuilderDocument = {
+        id: documentWithoutNodeData.id,
+        type: "page",
+        props: documentWithoutNodeData.props,
+        styles: documentWithoutNodeData.styles,
+        children: documentWithoutNodeData.children,
+    };
+
+    /*
+     * Root-level before / after.
+     */
+    if (
+        position.type !== "inside"
+    ) {
+        const targetIndex =
+            documentWithoutNode.children.findIndex(
+                (child) =>
+                    child.id ===
+                    position.targetNodeId,
+            );
+
+        if (targetIndex !== -1) {
+            const children = [
+                ...documentWithoutNode.children,
+            ];
+
+            const insertIndex =
+                position.type === "before"
+                    ? targetIndex
+                    : targetIndex + 1;
+
+            children.splice(
+                insertIndex,
+                0,
+                removedNode,
+            );
+
+            return {
+                ...documentWithoutNode,
+                children,
+            };
+        }
+    }
+
+    /*
+     * Nested insert.
+     */
+    const children =
+        documentWithoutNode.children.map(
+            (child) =>
+                insertNode(
+                    child,
+                    removedNode,
+                    position,
+                ),
+        );
+
+    return {
+        ...documentWithoutNode,
+        children,
+    };
 }

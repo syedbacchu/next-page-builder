@@ -67,13 +67,29 @@ export function handleDragAction(
                     },
                 };
             }
+            console.log("=== DROP NODE ===");
 
+            console.log("ACTIVE NODE:", activeNodeId);
+
+            console.log("DROP POSITION:", dropPosition);
+
+            console.log(
+                "CAN DROP:",
+                canDropNode(
+                    state.document,
+                    activeNodeId,
+                    dropPosition,
+                ),
+            );
             const newDocument = moveNodeToPosition(
                 state.document,
                 activeNodeId,
                 dropPosition,
             );
-
+            console.log(
+                "DOCUMENT CHANGED:",
+                newDocument !== state.document,
+            );
             return {
                 ...commitDocument(state, newDocument),
 

@@ -5,67 +5,86 @@ import { useBuilder } from "@/features/builder/store/BuilderProvider";
 export function BuilderNodeToolbar() {
     const { state, dispatch } = useBuilder();
 
-    if (!state.selectedNodeId) {
+    const selectedNodeId = state.selectedNodeId;
+
+    if (selectedNodeId === null) {
         return null;
     }
 
     function handleDelete() {
-        if (!state.selectedNodeId) {
+        const nodeId = state.selectedNodeId;
+
+        if (nodeId === null) {
             return;
         }
 
         dispatch({
             type: "DELETE_NODE",
-            nodeId: state.selectedNodeId,
+            nodeId,
         });
     }
 
     function handleDuplicate() {
-        if (!state.selectedNodeId) {
+        const nodeId = state.selectedNodeId;
+
+        if (nodeId === null) {
             return;
         }
 
         dispatch({
             type: "DUPLICATE_NODE",
-            nodeId: state.selectedNodeId,
+            nodeId,
         });
     }
 
     function handleMoveUp() {
-        if (!state.selectedNodeId) {
+        const nodeId = state.selectedNodeId;
+
+        if (nodeId === null) {
             return;
         }
 
         dispatch({
             type: "MOVE_NODE_UP",
-            nodeId: state.selectedNodeId,
+            nodeId,
         });
     }
 
     function handleMoveDown() {
-        if (!state.selectedNodeId) {
+        const nodeId = state.selectedNodeId;
+
+        if (nodeId === null) {
             return;
         }
 
         dispatch({
             type: "MOVE_NODE_DOWN",
-            nodeId: state.selectedNodeId,
+            nodeId,
         });
     }
 
     return (
         <div
             className={[
-                "absolute left-1/2 top-0 z-[9999]",
-                "-translate-x-1/2 -translate-y-[calc(100%+8px)]",
-                "flex flex-row items-center gap-1",
+                "absolute left-1/2 top-0",
+                "z-[99999]",
+                "-translate-x-1/2",
+                "-translate-y-[calc(100%+8px)]",
+                "flex items-center gap-1",
                 "rounded-lg border border-slate-200",
                 "bg-white p-1",
-                "shadow-lg",
+                "shadow-xl",
+                "whitespace-nowrap",
+                "pointer-events-auto",
+                "select-none",
             ].join(" ")}
             onClick={(event) => {
                 event.stopPropagation();
             }}
+            onMouseDown={(event) => {
+                event.stopPropagation();
+            }}
+            draggable={false}
         >
             <button
                 type="button"

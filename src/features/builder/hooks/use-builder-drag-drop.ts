@@ -3,12 +3,12 @@
 import type { DragEvent } from "react";
 
 import type { BuilderNode } from "@/features/builder/types/builder.types";
-import {useBuilder} from "@/features/builder/store/BuilderProvider";
-import {componentRegistry} from "@/features/builder/registry/component-registry";
-import {DropPosition} from "@/features/builder/types/drop-position.types";
-import {canDropNewComponent} from "@/features/builder/utils/can-drop-new-component";
-import {canDropNode} from "@/features/builder/utils/can-drop-node";
-import {createBuilderNode} from "@/features/builder/utils/create-node";
+import { useBuilder } from "@/features/builder/store/BuilderProvider";
+import { componentRegistry } from "@/features/builder/registry/component-registry";
+import type { DropPosition } from "@/features/builder/types/drop-position.types";
+import { canDropNewComponent } from "@/features/builder/utils/can-drop-new-component";
+import { canDropNode } from "@/features/builder/utils/can-drop-node";
+import { createBuilderNode } from "@/features/builder/utils/create-node";
 
 interface UseBuilderDragDropOptions {
     node: BuilderNode;
@@ -36,21 +36,23 @@ export function useBuilderDragDrop({
                                        node,
                                    }: UseBuilderDragDropOptions): UseBuilderDragDropReturn {
     const { state, dispatch } = useBuilder();
+
     function handleDragStart(
         event: DragEvent<HTMLDivElement>,
     ) {
         event.stopPropagation();
+
         event.dataTransfer.setData(
             "application/x-builder-node",
             node.id,
         );
 
+        event.dataTransfer.effectAllowed = "move";
+
         dispatch({
             type: "DRAG_START",
             nodeId: node.id,
         });
-
-        event.dataTransfer.effectAllowed = "move";
     }
 
     function handleDragOver(
@@ -59,21 +61,21 @@ export function useBuilderDragDrop({
         event.preventDefault();
         event.stopPropagation();
 
-        const dragType = event.dataTransfer.types;
+        const dragTypes = event.dataTransfer.types;
 
-        const isNewComponentDrag = dragType.includes(
-            "application/x-builder-component",
-        );
+        const isNewComponentDrag =
+            dragTypes.includes(
+                "application/x-builder-component",
+            );
 
-        const activeNodeId = state.drag.activeNodeId;
-
-        event.dataTransfer.dropEffect =
-            isNewComponentDrag ? "copy" : "move";
+        const activeNodeId =
+            state.drag.activeNodeId;
 
         const rect =
             event.currentTarget.getBoundingClientRect();
 
-        const offsetY = event.clientY - rect.top;
+        const offsetY =
+            event.clientY - rect.top;
 
         const ratio =
             rect.height > 0
@@ -83,30 +85,19 @@ export function useBuilderDragDrop({
         const definition =
             componentRegistry[node.type];
 
-        const position: DropPosition = isNewComponentDrag
-            ? {
-                type: "inside",
-                targetNodeId: node.id,
-            }
-            : definition.canHaveChildren &&
-            ratio > 0.25 &&
-            ratio < 0.75
-                ? {
-                    type: "inside",
-                    targetNodeId: node.id,
-                }
-                : {
-                    type:
-                        ratio < 0.5
-                            ? "before"
-                            : "after",
-                    targetNodeId: node.id,
-                };
+        /*
+         * ============================================
+         * NEW COMPONENT FROM SIDEBAR
+         * ============================================
+         */
 
         if (isNewComponentDrag) {
-            const componentType = event.dataTransfer.getData(
-                "application/x-builder-component",
-            ) as BuilderNode["type"];
+            event.dataTransfer.dropEffect = "copy";
+
+            const componentType =
+                event.dataTransfer.getData(
+                    "application/x-builder-component",
+                ) as BuilderNode["type"];
 
             if (
                 !canDropNewComponent(
@@ -117,22 +108,108 @@ export function useBuilderDragDrop({
                 event.dataTransfer.dropEffect = "none";
                 return;
             }
-        }
-        // Existing node drag validation
-        if (!isNewComponentDrag && activeNodeId) {
-            if (
-                !canDropNode(
-                    state.document,
-                    activeNodeId,
-                    position,
-                )
-            ) {
-                event.dataTransfer.dropEffect =
-                    "none";
 
-                return;
-            }
+            const position: DropPosition = {
+                type: "inside",
+                targetNodeId: node.id,
+            };
+
+            console.log("=== DRAG OVER ===");
+
+            console.log("DRAGGING:", activeNodeId);
+
+            console.log("TARGET:", node.id);
+
+            console.log("TARGET TYPE:", node.type);
+
+            console.log("POSITION:", position);
+            dispatch({
+                type: "SET_DROP_POSITION",
+                position,
+            });
+
+            return;
         }
+
+        /*
+         * ============================================
+         * EXISTING BUILDER NODE
+         * ============================================
+         */
+
+        if (!activeNodeId) {
+            return;
+        }
+
+        event.dataTransfer.dropEffect = "move";
+
+        /*
+         * Don't allow a node to drop on itself.
+         */
+        if (activeNodeId === node.id) {
+            event.dataTransfer.dropEffect = "none";
+            return;
+        }
+
+        /*
+         * ============================================
+         * DROP INSIDE
+         * ============================================
+         *
+         * If this node can contain children and the
+         * cursor is around the middle, move inside.
+         */
+
+        let position: DropPosition;
+
+        if (
+            definition.canHaveChildren &&
+            ratio > 0.25 &&
+            ratio < 0.75
+        ) {
+            position = {
+                type: "inside",
+                targetNodeId: node.id,
+            };
+        } else {
+            /*
+             * ========================================
+             * BEFORE / AFTER
+             * ========================================
+             */
+
+            position = {
+                type:
+                    ratio < 0.5
+                        ? "before"
+                        : "after",
+
+                targetNodeId: node.id,
+            };
+        }
+
+        /*
+         * ============================================
+         * VALIDATE
+         * ============================================
+         */
+
+        if (
+            !canDropNode(
+                state.document,
+                activeNodeId,
+                position,
+            )
+        ) {
+            event.dataTransfer.dropEffect = "none";
+            return;
+        }
+
+        /*
+         * ============================================
+         * SET DROP POSITION
+         * ============================================
+         */
 
         dispatch({
             type: "SET_DROP_POSITION",
@@ -146,24 +223,36 @@ export function useBuilderDragDrop({
         event.preventDefault();
         event.stopPropagation();
 
-        const componentType = event.dataTransfer.getData(
-            "application/x-builder-component",
-        );
+        const componentType =
+            event.dataTransfer.getData(
+                "application/x-builder-component",
+            );
 
-        // New component from Sidebar
+        /*
+         * ============================================
+         * NEW COMPONENT FROM SIDEBAR
+         * ============================================
+         */
+
         if (componentType) {
+            const typedComponentType =
+                componentType as BuilderNode["type"];
+
             if (
                 !canDropNewComponent(
-                    componentType as BuilderNode["type"],
+                    typedComponentType,
                     node.type,
                 )
             ) {
+
+
                 return;
             }
 
-            const newNode = createBuilderNode(
-                componentType as BuilderNode["type"],
-            );
+            const newNode =
+                createBuilderNode(
+                    typedComponentType,
+                );
 
             dispatch({
                 type: "ADD_NODE",
@@ -171,13 +260,56 @@ export function useBuilderDragDrop({
                 node: newNode,
             });
 
+
             return;
         }
 
-        // Existing builder node
-        if (state.drag.activeNodeId === node.id) {
+        /*
+         * ============================================
+         * EXISTING BUILDER NODE
+         * ============================================
+         */
+
+        const activeNodeId =
+            state.drag.activeNodeId;
+
+        if (!activeNodeId) {
             return;
         }
+
+        /*
+         * Never drop a node onto itself.
+         */
+
+        if (activeNodeId === node.id) {
+            return;
+        }
+
+        /*
+         * Final validation.
+         */
+
+        const dropPosition =
+            state.drag.dropPosition;
+
+        if (!dropPosition) {
+            return;
+        }
+
+        if (
+            !canDropNode(
+                state.document,
+                activeNodeId,
+                dropPosition,
+            )
+        ) {
+            return;
+        }
+
+        /*
+         * DROP_NODE will perform the actual move
+         * through builder.drag.ts.
+         */
 
         dispatch({
             type: "DROP_NODE",

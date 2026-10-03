@@ -27,8 +27,7 @@ export function BuilderRenderer({
     node,
 }: BuilderRendererProps) {
     const { state, dispatch } = useBuilder();
-    console.log("Rendering node:", node.id);
-    console.log("Selected node:", state.selectedNodeId);
+  
     const {
         handleDragStart,
         handleDragOver,
@@ -81,17 +80,6 @@ export function BuilderRenderer({
             node={child}
         />
     ));
-
-    console.log(
-        "NODE:",
-        node.id,
-        node.type,
-        "CHILDREN:",
-        node.children.map((child) => ({
-            id: child.id,
-            type: child.type,
-        })),
-    );
 
     const isSelected =
         state.selectedNodeId === node.id;

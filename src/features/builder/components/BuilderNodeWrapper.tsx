@@ -1,6 +1,11 @@
 "use client";
 
-import type { ReactNode, CSSProperties } from "react";
+import type {
+    CSSProperties,
+    MouseEvent,
+    ReactNode,
+    DragEvent,
+} from "react";
 
 interface BuilderNodeWrapperProps {
     nodeId: string;
@@ -9,20 +14,25 @@ interface BuilderNodeWrapperProps {
     children: ReactNode;
     style?: CSSProperties;
     className?: string;
+
     onClick: (
-        event: React.MouseEvent<HTMLDivElement>,
+        event: MouseEvent<HTMLDivElement>,
     ) => void;
+
     onDragStart: (
-        event: React.DragEvent<HTMLDivElement>,
+        event: DragEvent<HTMLDivElement>,
     ) => void;
+
     onDragOver: (
-        event: React.DragEvent<HTMLDivElement>,
+        event: DragEvent<HTMLDivElement>,
     ) => void;
+
     onDrop: (
-        event: React.DragEvent<HTMLDivElement>,
+        event: DragEvent<HTMLDivElement>,
     ) => void;
+
     onDragEnd: (
-        event: React.DragEvent<HTMLDivElement>,
+        event: DragEvent<HTMLDivElement>,
     ) => void;
 }
 
@@ -32,6 +42,7 @@ export function BuilderNodeWrapper({
                                        isSelected,
                                        children,
                                        style,
+                                       className = "",
                                        onClick,
                                        onDragStart,
                                        onDragOver,
@@ -55,16 +66,25 @@ export function BuilderNodeWrapper({
             onClick={onClick}
             className={[
                 "builder-node-wrapper",
+                "group",
+                "relative",
+
                 isLayoutNode
                     ? "builder-layout-node"
                     : "",
+
                 nodeType === "column"
                     ? "builder-column-node"
                     : "",
+
                 isSelected
                     ? "builder-node-selected"
                     : "",
-            ].join(" ")}
+
+                className,
+            ]
+                .filter(Boolean)
+                .join(" ")}
             style={style}
         >
             {children}
