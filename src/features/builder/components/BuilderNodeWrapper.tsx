@@ -2,9 +2,9 @@
 
 import type {
     CSSProperties,
+    DragEvent,
     MouseEvent,
     ReactNode,
-    DragEvent,
 } from "react";
 
 interface BuilderNodeWrapperProps {
