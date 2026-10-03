@@ -31,7 +31,8 @@ export function useBuilderNodeSelection({
 
         if (
             node.type === "section" ||
-            node.type === "container"
+            node.type === "container" ||
+            node.type === "column"
         ) {
             dispatch({
                 type: "SET_INSERT_TARGET",

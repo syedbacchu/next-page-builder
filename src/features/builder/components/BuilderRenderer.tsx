@@ -18,6 +18,7 @@ import { getHoverStyles } from "@/features/builder/utils/get-hover-styles";
 import {
     getStyleValue,
 } from "@/features/builder/types/builder.types";
+import type { DropPosition } from "@/features/builder/types/drop-position.types";
 
 interface BuilderRendererProps {
     node: BuilderNode;
@@ -27,7 +28,7 @@ export function BuilderRenderer({
     node,
 }: BuilderRendererProps) {
     const { state, dispatch } = useBuilder();
-  
+
     const {
         handleDragStart,
         handleDragOver,
@@ -108,6 +109,13 @@ export function BuilderRenderer({
 
     const isEmptyLayoutNode =
         isLayoutNode &&
+        node.children.length === 0;
+
+    const isColumn =
+        node.type === "column";
+
+    const isEmptyColumn =
+        isColumn &&
         node.children.length === 0;
 
     const hoverStyles = getHoverStyles(
@@ -261,9 +269,97 @@ export function BuilderRenderer({
             )}
 
             <Component {...node.props}>
-                {isEmptyLayoutNode ? (
+                {isEmptyColumn ? (
                     <div
-                        className="flex min-h-[100px] items-center justify-center rounded-md border-2 border-dashed border-slate-200 bg-slate-50/50 p-6"
+                        className={[
+                            "flex min-h-[120px] w-full",
+                            "items-center justify-center",
+                            "rounded-md border-2 border-dashed",
+                            "border-slate-200",
+                            "bg-slate-50/50",
+                            "p-6",
+                            "transition-colors",
+                            "group-hover:border-blue-400",
+                            "group-hover:bg-blue-50/30",
+                        ].join(" ")}
+                        onDragOver={(event) => {
+                            event.preventDefault();
+                            event.stopPropagation();
+
+                            const activeNodeId =
+                                state.drag.activeNodeId;
+
+                            if (!activeNodeId) {
+                                return;
+                            }
+
+                            if (activeNodeId === node.id) {
+                                event.dataTransfer.dropEffect = "none";
+                                return;
+                            }
+
+                            const position: DropPosition = {
+                                type: "inside",
+                                targetNodeId: node.id,
+                            };
+
+                            if (
+                                !canDropNode(
+                                    state.document,
+                                    activeNodeId,
+                                    position,
+                                )
+                            ) {
+                                event.dataTransfer.dropEffect = "none";
+                                return;
+                            }
+
+                            event.dataTransfer.dropEffect = "move";
+
+                            dispatch({
+                                type: "SET_DROP_POSITION",
+                                position,
+                            });
+                        }}
+                        onDrop={(event) => {
+                            event.preventDefault();
+                            event.stopPropagation();
+
+                            const activeNodeId =
+                                state.drag.activeNodeId;
+
+                            const dropPosition =
+                                state.drag.dropPosition;
+
+                            if (!activeNodeId) {
+                                return;
+                            }
+
+                            if (!dropPosition) {
+                                return;
+                            }
+
+                            if (
+                                dropPosition.targetNodeId !==
+                                node.id
+                            ) {
+                                return;
+                            }
+
+                            if (
+                                !canDropNode(
+                                    state.document,
+                                    activeNodeId,
+                                    dropPosition,
+                                )
+                            ) {
+                                return;
+                            }
+
+                            dispatch({
+                                type: "DROP_NODE",
+                            });
+                        }}
                         onClick={(event) => {
                             event.stopPropagation();
 
@@ -281,9 +377,13 @@ export function BuilderRenderer({
                         <div className="text-center">
                             <div
                                 className={[
-                                    "mx-auto mb-3 flex h-10 w-10 items-center justify-center",
-                                    "rounded-full border border-dashed border-slate-300",
-                                    "bg-white text-xl text-slate-400",
+                                    "mx-auto mb-3 flex h-10 w-10",
+                                    "items-center justify-center",
+                                    "rounded-full",
+                                    "border border-dashed",
+                                    "border-slate-300",
+                                    "bg-white",
+                                    "text-xl text-slate-400",
                                     "transition",
                                     "group-hover:border-blue-400",
                                     "group-hover:bg-blue-50",
@@ -298,7 +398,7 @@ export function BuilderRenderer({
                             </p>
 
                             <p className="mt-1 text-xs text-slate-400">
-                                Drag an element here or select one from the sidebar
+                                Drag an element here
                             </p>
                         </div>
                     </div>
