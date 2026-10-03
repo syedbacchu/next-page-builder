@@ -19,6 +19,7 @@ import {
     getStyleValue,
 } from "@/features/builder/types/builder.types";
 import type { DropPosition } from "@/features/builder/types/drop-position.types";
+import { BuilderColumnDropZone } from "@/features/builder/components/BuilderColumnDropZone";
 
 interface BuilderRendererProps {
     node: BuilderNode;
@@ -34,6 +35,7 @@ export function BuilderRenderer({
         handleDragOver,
         handleDrop,
         handleDragEnd,
+        handleColumnDragOver
     } = useBuilderDragDrop({ node });
 
     const {
@@ -269,142 +271,24 @@ export function BuilderRenderer({
             )}
 
             <Component {...node.props}>
-                {isEmptyColumn ? (
-                    <div
-                        className={[
-                            "flex min-h-[120px] w-full",
-                            "items-center justify-center",
-                            "rounded-md border-2 border-dashed",
-                            "border-slate-200",
-                            "bg-slate-50/50",
-                            "p-6",
-                            "transition-colors",
-                            "group-hover:border-blue-400",
-                            "group-hover:bg-blue-50/30",
-                        ].join(" ")}
-                        onDragOver={(event) => {
-                            event.preventDefault();
-                            event.stopPropagation();
+                {node.type === "column" && node.children.length === 0 ? (
+                    <BuilderColumnDropZone
+                        columnId={node.id}
+                        onDragOver={handleColumnDragOver}
+                        onDrop={handleDrop}
+                    />
 
-                            const activeNodeId =
-                                state.drag.activeNodeId;
+                ) : null}
 
-                            if (!activeNodeId) {
-                                return;
-                            }
+                {children}
 
-                            if (activeNodeId === node.id) {
-                                event.dataTransfer.dropEffect = "none";
-                                return;
-                            }
-
-                            const position: DropPosition = {
-                                type: "inside",
-                                targetNodeId: node.id,
-                            };
-
-                            if (
-                                !canDropNode(
-                                    state.document,
-                                    activeNodeId,
-                                    position,
-                                )
-                            ) {
-                                event.dataTransfer.dropEffect = "none";
-                                return;
-                            }
-
-                            event.dataTransfer.dropEffect = "move";
-
-                            dispatch({
-                                type: "SET_DROP_POSITION",
-                                position,
-                            });
-                        }}
-                        onDrop={(event) => {
-                            event.preventDefault();
-                            event.stopPropagation();
-
-                            const activeNodeId =
-                                state.drag.activeNodeId;
-
-                            const dropPosition =
-                                state.drag.dropPosition;
-
-                            if (!activeNodeId) {
-                                return;
-                            }
-
-                            if (!dropPosition) {
-                                return;
-                            }
-
-                            if (
-                                dropPosition.targetNodeId !==
-                                node.id
-                            ) {
-                                return;
-                            }
-
-                            if (
-                                !canDropNode(
-                                    state.document,
-                                    activeNodeId,
-                                    dropPosition,
-                                )
-                            ) {
-                                return;
-                            }
-
-                            dispatch({
-                                type: "DROP_NODE",
-                            });
-                        }}
-                        onClick={(event) => {
-                            event.stopPropagation();
-
-                            dispatch({
-                                type: "SELECT_NODE",
-                                nodeId: node.id,
-                            });
-
-                            dispatch({
-                                type: "SET_INSERT_TARGET",
-                                nodeId: node.id,
-                            });
-                        }}
-                    >
-                        <div className="text-center">
-                            <div
-                                className={[
-                                    "mx-auto mb-3 flex h-10 w-10",
-                                    "items-center justify-center",
-                                    "rounded-full",
-                                    "border border-dashed",
-                                    "border-slate-300",
-                                    "bg-white",
-                                    "text-xl text-slate-400",
-                                    "transition",
-                                    "group-hover:border-blue-400",
-                                    "group-hover:bg-blue-50",
-                                    "group-hover:text-blue-500",
-                                ].join(" ")}
-                            >
-                                +
-                            </div>
-
-                            <p className="text-sm font-semibold text-slate-600">
-                                Add Element
-                            </p>
-
-                            <p className="mt-1 text-xs text-slate-400">
-                                Drag an element here
-                            </p>
-                        </div>
-                    </div>
-                ) : (
-                    children
-                )}
+                {node.type === "column" && node.children.length > 0 ? (
+                    <BuilderColumnDropZone
+                        columnId={node.id}
+                        onDragOver={handleColumnDragOver}
+                        onDrop={handleDrop}
+                    />
+                ) : null}
             </Component>
         </BuilderNodeWrapper>
             </>

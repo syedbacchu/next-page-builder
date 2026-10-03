@@ -30,6 +30,10 @@ interface UseBuilderDragDropReturn {
     handleDragEnd: (
         event: DragEvent<HTMLDivElement>,
     ) => void;
+
+    handleColumnDragOver: (
+        event: DragEvent<HTMLDivElement>,
+    ) => void;
 }
 
 export function useBuilderDragDrop({
@@ -325,11 +329,50 @@ export function useBuilderDragDrop({
             type: "DRAG_END",
         });
     }
+    function handleColumnDragOver(
+        event: DragEvent<HTMLDivElement>,
+    ) {
+        event.preventDefault();
+        event.stopPropagation();
 
+        const activeNodeId = state.drag.activeNodeId;
+
+        if (!activeNodeId) {
+            return;
+        }
+
+        if (activeNodeId === node.id) {
+            return;
+        }
+
+        event.dataTransfer.dropEffect = "move";
+
+        const position: DropPosition = {
+            type: "inside",
+            targetNodeId: node.id,
+        };
+
+        if (
+            !canDropNode(
+                state.document,
+                activeNodeId,
+                position,
+            )
+        ) {
+            event.dataTransfer.dropEffect = "none";
+            return;
+        }
+
+        dispatch({
+            type: "SET_DROP_POSITION",
+            position,
+        });
+    }
     return {
         handleDragStart,
         handleDragOver,
         handleDrop,
         handleDragEnd,
+        handleColumnDragOver,
     };
 }
