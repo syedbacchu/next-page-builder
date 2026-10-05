@@ -34,6 +34,7 @@ export function BuilderRenderer({
     const {
         handleDragStart,
         handleDragOver,
+        handleColumnDragOver,
         handleDrop,
         handleDragEnd,
     } = useBuilderDragDrop({ node });
@@ -330,7 +331,7 @@ export function BuilderRenderer({
                     <BuilderColumnDropZone
                         columnId={node.id}
                         empty
-                        onDragOver={handleDragOver}
+                        onDragOver={handleColumnDragOver}
                         onDrop={handleDrop}
                         onClick={(event) => {
                             event.stopPropagation();
@@ -353,7 +354,7 @@ export function BuilderRenderer({
                 {node.type === "column" && node.children.length > 0 ? (
                     <BuilderColumnDropZone
                         columnId={node.id}
-                        onDragOver={handleDragOver}
+                        onDragOver={handleColumnDragOver}
                         onDrop={handleDrop}
                     />
                 ) : null}

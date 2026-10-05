@@ -23,6 +23,10 @@ interface UseBuilderDragDropReturn {
         event: DragEvent<HTMLDivElement>,
     ) => void;
 
+    handleColumnDragOver: (
+        event: DragEvent<HTMLDivElement>,
+    ) => void;
+
     handleDrop: (
         event: DragEvent<HTMLDivElement>,
     ) => void;
@@ -62,7 +66,27 @@ export function useBuilderDragDrop({
         event.preventDefault();
         event.stopPropagation();
 
-        const dragTypes = event.dataTransfer.types;
+        /*
+         * ============================================
+         * COLUMN DROP ZONE
+         * ============================================
+         *
+         * If the cursor is inside the dedicated
+         * column drop zone, don't let the normal
+         * before/after calculation override it.
+         */
+        const columnDropZone = (
+            event.target as HTMLElement
+        ).closest(
+            "[data-builder-column-drop-zone]",
+        );
+
+        if (columnDropZone) {
+            return;
+        }
+
+        const dragTypes =
+            event.dataTransfer.types;
 
         const isNewComponentDrag =
             dragTypes.includes(
@@ -116,14 +140,23 @@ export function useBuilderDragDrop({
             };
 
             console.log("=== DRAG OVER ===");
+            console.log(
+                "DRAGGING:",
+                activeNodeId,
+            );
+            console.log(
+                "TARGET:",
+                node.id,
+            );
+            console.log(
+                "TARGET TYPE:",
+                node.type,
+            );
+            console.log(
+                "POSITION:",
+                position,
+            );
 
-            console.log("DRAGGING:", activeNodeId);
-
-            console.log("TARGET:", node.id);
-
-            console.log("TARGET TYPE:", node.type);
-
-            console.log("POSITION:", position);
             dispatch({
                 type: "SET_DROP_POSITION",
                 position,
@@ -145,8 +178,11 @@ export function useBuilderDragDrop({
         event.dataTransfer.dropEffect = "move";
 
         /*
-         * Don't allow a node to drop on itself.
+         * ============================================
+         * DON'T DROP NODE ON ITSELF
+         * ============================================
          */
+
         if (activeNodeId === node.id) {
             event.dataTransfer.dropEffect = "none";
             return;
@@ -154,14 +190,20 @@ export function useBuilderDragDrop({
 
         /*
          * ============================================
-         * DROP INSIDE
+         * CALCULATE DROP POSITION
          * ============================================
-         *
-         * If this node can contain children and the
-         * cursor is around the middle, move inside.
          */
 
         let position: DropPosition;
+
+        /*
+         * ============================================
+         * DROP INSIDE
+         * ============================================
+         *
+         * If this node can contain children and
+         * cursor is around the middle, drop inside.
+         */
 
         if (
             definition.canHaveChildren &&
@@ -191,7 +233,7 @@ export function useBuilderDragDrop({
 
         /*
          * ============================================
-         * VALIDATE
+         * VALIDATE DROP
          * ============================================
          */
 
@@ -211,6 +253,48 @@ export function useBuilderDragDrop({
          * SET DROP POSITION
          * ============================================
          */
+
+        dispatch({
+            type: "SET_DROP_POSITION",
+            position,
+        });
+    }
+
+    function handleColumnDragOver(
+        event: DragEvent<HTMLDivElement>,
+    ) {
+        event.preventDefault();
+        event.stopPropagation();
+
+        const activeNodeId =
+            state.drag.activeNodeId;
+
+        if (!activeNodeId) {
+            return;
+        }
+
+        if (activeNodeId === node.id) {
+            event.dataTransfer.dropEffect = "none";
+            return;
+        }
+
+        const position: DropPosition = {
+            type: "inside",
+            targetNodeId: node.id,
+        };
+
+        if (
+            !canDropNode(
+                state.document,
+                activeNodeId,
+                position,
+            )
+        ) {
+            event.dataTransfer.dropEffect = "none";
+            return;
+        }
+
+        event.dataTransfer.dropEffect = "move";
 
         dispatch({
             type: "SET_DROP_POSITION",
@@ -337,6 +421,7 @@ export function useBuilderDragDrop({
     return {
         handleDragStart,
         handleDragOver,
+        handleColumnDragOver,
         handleDrop,
         handleDragEnd,
     };
