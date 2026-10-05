@@ -61,15 +61,6 @@ export function createInitialBuilderState(
     };
 }
 
-function getDefaultInsertTarget(
-    document: BuilderDocument,
-): string {
-    const firstContainer = findFirstContainer(document);
-
-    return firstContainer?.id ?? document.id;
-}
-
-
 export function builderReducer(
     state: BuilderState,
     action: BuilderAction,

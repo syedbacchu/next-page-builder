@@ -139,24 +139,6 @@ export function useBuilderDragDrop({
                 targetNodeId: node.id,
             };
 
-            console.log("=== DRAG OVER ===");
-            console.log(
-                "DRAGGING:",
-                activeNodeId,
-            );
-            console.log(
-                "TARGET:",
-                node.id,
-            );
-            console.log(
-                "TARGET TYPE:",
-                node.type,
-            );
-            console.log(
-                "POSITION:",
-                position,
-            );
-
             dispatch({
                 type: "SET_DROP_POSITION",
                 position,

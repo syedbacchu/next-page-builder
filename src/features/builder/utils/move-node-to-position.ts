@@ -88,31 +88,39 @@ function insertNode(
         };
     }
 
-    const targetIndex =
-        node.children.findIndex(
-            (child) =>
-                child.id ===
-                position.targetNodeId,
-        );
+    /*
+     * Sibling insertion only applies to
+     * before / after positions. An "inside"
+     * position must recurse so the node ends
+     * up in the target's own children.
+     */
+    if (position.type !== "inside") {
+        const targetIndex =
+            node.children.findIndex(
+                (child) =>
+                    child.id ===
+                    position.targetNodeId,
+            );
 
-    if (targetIndex !== -1) {
-        const children = [...node.children];
+        if (targetIndex !== -1) {
+            const children = [...node.children];
 
-        const insertIndex =
-            position.type === "before"
-                ? targetIndex
-                : targetIndex + 1;
+            const insertIndex =
+                position.type === "before"
+                    ? targetIndex
+                    : targetIndex + 1;
 
-        children.splice(
-            insertIndex,
-            0,
-            newNode,
-        );
+            children.splice(
+                insertIndex,
+                0,
+                newNode,
+            );
 
-        return {
-            ...node,
-            children,
-        };
+            return {
+                ...node,
+                children,
+            };
+        }
     }
 
     let changed = false;
