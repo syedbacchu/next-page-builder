@@ -1,6 +1,12 @@
 import { z } from "zod";
 
 export const createPageSchema = z.object({
+    id: z
+        .number()
+        .int()
+        .positive()
+        .optional(),
+
     title: z
         .string()
         .trim()

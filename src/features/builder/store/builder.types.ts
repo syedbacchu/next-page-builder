@@ -8,7 +8,15 @@ export interface BuilderHistory {
     future: BuilderDocument[];
 }
 
+export interface BuilderPageMeta {
+    id: number | null;
+    title: string;
+    slug: string;
+    status: string;
+}
+
 export interface BuilderState {
+    page: BuilderPageMeta;
     document: BuilderDocument;
     selectedNodeId: string | null;
     insertTargetNodeId: string | null;
@@ -129,4 +137,7 @@ export type BuilderAction =
     viewport: BuilderViewport;
     key: string;
     value: string;
+} | {
+    type: "SET_PAGE_META";
+    page: Partial<BuilderPageMeta>;
 };

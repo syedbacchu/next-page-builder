@@ -58,6 +58,12 @@ export function createInitialBuilderState(
             activeNodeId: null,
             dropPosition: null,
         },
+        page: {
+            id: null,
+            title: "My First Page",
+            slug: "my-first-page",
+            status: "draft",
+        },
     };
 }
 
@@ -228,6 +234,14 @@ export function builderReducer(
 
             return commitDocument(state, document);
         }
+        case "SET_PAGE_META":
+            return {
+                ...state,
+                page: {
+                    ...state.page,
+                    ...action.page,
+                },
+            };
         default:
             return state;
     }

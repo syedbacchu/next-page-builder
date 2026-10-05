@@ -28,13 +28,22 @@ const BuilderContext =
 
 interface BuilderProviderProps {
     document: BuilderDocument;
+
+    page?: {
+        id?: number | null;
+        title?: string;
+        slug?: string;
+        status?: string;
+    };
+
     children: ReactNode;
 }
 
 export function BuilderProvider({
-    document,
-    children,
-}: BuilderProviderProps) {
+                                    document,
+                                    page,
+                                    children,
+                                }: BuilderProviderProps) {
     const [state, dispatch] = useReducer(
         builderReducer,
         document,
@@ -42,7 +51,9 @@ export function BuilderProvider({
     );
 
     return (
-        <BuilderContext.Provider value={{ state, dispatch }}>
+        <BuilderContext.Provider
+            value={{ state, dispatch }}
+        >
             {children}
         </BuilderContext.Provider>
     );
