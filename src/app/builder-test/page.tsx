@@ -2,9 +2,10 @@ import type { BuilderDocument } from "@/features/builder/types/builder.types";
 import { BuilderProvider } from "@/features/builder/store/BuilderProvider";
 import { SelectedNodeInspector } from "@/features/builder/components/SelectedNodeInspector";
 import { BuilderCanvas } from "@/features/builder/components/BuilderCanvas";
-import {BuilderSidebar} from "@/features/builder/components/BuilderSidebar";
+import { BuilderSidebar } from "@/features/builder/components/BuilderSidebar";
 import { BuilderKeyboardShortcuts } from "@/features/builder/components/BuilderKeyboardShortcuts";
 import { BuilderHeader } from "@/features/builder/components/BuilderHeader";
+import { BuilderNavigatorContainer } from "@/features/builder/components/navigator/BuilderNavigatorContainer";
 
 const testDocument: BuilderDocument = {
     id: "page-1",
@@ -69,8 +70,6 @@ const testDocument: BuilderDocument = {
     ],
 };
 
-
-
 export default function BuilderTestPage() {
     return (
         <BuilderProvider document={testDocument}>
@@ -79,8 +78,10 @@ export default function BuilderTestPage() {
             <div className="flex min-h-screen flex-col">
                 <BuilderHeader />
 
-                <div className="flex min-h-0 flex-1">
+                <div className="flex flex-1">
                     <BuilderSidebar />
+
+                    <BuilderNavigatorContainer />
 
                     <BuilderCanvas />
 
