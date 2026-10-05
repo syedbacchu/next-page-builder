@@ -106,7 +106,7 @@ export function NavigatorNode({
                     "border-b border-slate-100",
                     "text-sm transition-colors",
                     isSelected
-                        ? "bg-blue-50 text-blue-700"
+                        ? "bg-blue-50 text-blue-700 ring-1 ring-inset ring-blue-200"
                         : "text-slate-700 hover:bg-slate-50",
                 ].join(" ")}
                 style={{

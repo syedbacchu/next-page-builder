@@ -1,9 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
-
+import { useEffect, useMemo, useState } from "react";
 import type { BuilderNode } from "@/features/builder/types/builder.types";
-
 import { NavigatorNode } from "./NavigatorNode";
 
 interface BuilderNavigatorProps {
@@ -21,6 +19,30 @@ function collectNodeIds(node: BuilderNode): string[] {
     ];
 }
 
+function findParentIds(
+    node: BuilderNode,
+    targetId: string,
+    parents: string[] = [],
+): string[] | null {
+    if (node.id === targetId) {
+        return parents;
+    }
+
+    for (const child of node.children) {
+        const result = findParentIds(
+            child,
+            targetId,
+            [...parents, node.id],
+        );
+
+        if (result) {
+            return result;
+        }
+    }
+
+    return null;
+}
+
 export function BuilderNavigator({
                                      document,
                                      selectedNodeId,
@@ -35,6 +57,40 @@ export function BuilderNavigator({
         useState<Set<string>>(
             () => new Set([document.id]),
         );
+
+    /*
+     * Automatically expand the parents of
+     * the currently selected node.
+     */
+    useEffect(() => {
+        if (!selectedNodeId) {
+            return;
+        }
+
+        const parentIds = findParentIds(
+            document,
+            selectedNodeId,
+        );
+
+        if (!parentIds) {
+            return;
+        }
+
+        setExpandedNodes((current) => {
+            const next = new Set(current);
+
+            let changed = false;
+
+            for (const parentId of parentIds) {
+                if (!next.has(parentId)) {
+                    next.add(parentId);
+                    changed = true;
+                }
+            }
+
+            return changed ? next : current;
+        });
+    }, [document, selectedNodeId]);
 
     const handleToggle = (nodeId: string) => {
         setExpandedNodes((current) => {
@@ -60,7 +116,8 @@ export function BuilderNavigator({
 
     return (
         <aside className="flex h-full w-64 shrink-0 flex-col border-r border-slate-200 bg-white">
-            <div className="flex h-11 items-center justify-between border-b border-slate-200 px-3">
+            {/* Header */}
+            <div className="flex h-11 shrink-0 items-center justify-between border-b border-slate-200 px-3">
                 <h2 className="text-sm font-semibold text-slate-800">
                     Navigator
                 </h2>
@@ -86,6 +143,7 @@ export function BuilderNavigator({
                 </div>
             </div>
 
+            {/* Tree */}
             <div className="min-h-0 flex-1 overflow-y-auto">
                 <NavigatorNode
                     node={document}
