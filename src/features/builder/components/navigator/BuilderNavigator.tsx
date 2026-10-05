@@ -1,16 +1,33 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import {
+    useEffect,
+    useMemo,
+    useState,
+    type DragEvent,
+} from "react";
+
 import type { BuilderNode } from "@/features/builder/types/builder.types";
-import { NavigatorNode } from "./NavigatorNode";
+
+import {
+    NavigatorNode,
+    type NavigatorDropPosition,
+} from "./NavigatorNode";
 
 interface BuilderNavigatorProps {
     document: BuilderNode;
     selectedNodeId: string | null;
     onSelectNode: (nodeId: string) => void;
+
+    onMoveNode: (
+        activeNodeId: string,
+        dropPosition: NavigatorDropPosition,
+    ) => void;
 }
 
-function collectNodeIds(node: BuilderNode): string[] {
+function collectNodeIds(
+    node: BuilderNode,
+): string[] {
     return [
         node.id,
         ...node.children.flatMap((child) =>
@@ -47,6 +64,7 @@ export function BuilderNavigator({
                                      document,
                                      selectedNodeId,
                                      onSelectNode,
+                                     onMoveNode,
                                  }: BuilderNavigatorProps) {
     const allNodeIds = useMemo(
         () => collectNodeIds(document),
@@ -58,9 +76,16 @@ export function BuilderNavigator({
             () => new Set([document.id]),
         );
 
+    const [draggedNodeId, setDraggedNodeId] =
+        useState<string | null>(null);
+
+    const [dropPosition, setDropPosition] =
+        useState<NavigatorDropPosition | null>(
+            null,
+        );
+
     /*
-     * Automatically expand the parents of
-     * the currently selected node.
+     * Automatically expand selected node parents.
      */
     useEffect(() => {
         if (!selectedNodeId) {
@@ -107,16 +132,107 @@ export function BuilderNavigator({
     };
 
     const expandAll = () => {
-        setExpandedNodes(new Set(allNodeIds));
+        setExpandedNodes(
+            new Set(allNodeIds),
+        );
     };
 
     const collapseAll = () => {
-        setExpandedNodes(new Set([document.id]));
+        setExpandedNodes(
+            new Set([document.id]),
+        );
+    };
+
+    const handleDragStart = (
+        event: DragEvent<HTMLDivElement>,
+        nodeId: string,
+    ) => {
+        setDraggedNodeId(nodeId);
+
+        event.dataTransfer.effectAllowed = "move";
+
+        event.dataTransfer.setData(
+            "application/x-builder-navigator-node",
+            nodeId,
+        );
+    };
+
+    const handleDragOver = (
+        event: DragEvent<HTMLDivElement>,
+        nodeId: string,
+    ) => {
+        event.preventDefault();
+        event.stopPropagation();
+
+        if (!draggedNodeId) {
+            return;
+        }
+
+        if (draggedNodeId === nodeId) {
+            setDropPosition(null);
+            return;
+        }
+
+        /*
+         * Determine before / after
+         * based on mouse position.
+         */
+        const rect =
+            event.currentTarget.getBoundingClientRect();
+
+        const middle =
+            rect.top + rect.height / 2;
+
+        const type =
+            event.clientY < middle
+                ? "before"
+                : "after";
+
+        setDropPosition({
+            type,
+            targetNodeId: nodeId,
+        });
+    };
+
+    const handleDrop = (
+        event: DragEvent<HTMLDivElement>,
+        nodeId: string,
+    ) => {
+        event.preventDefault();
+        event.stopPropagation();
+
+        if (!draggedNodeId) {
+            return;
+        }
+
+        if (draggedNodeId === nodeId) {
+            return;
+        }
+
+        if (
+            !dropPosition ||
+            dropPosition.targetNodeId !== nodeId
+        ) {
+            return;
+        }
+
+        onMoveNode(
+            draggedNodeId,
+            dropPosition,
+        );
+
+        setDraggedNodeId(null);
+        setDropPosition(null);
+    };
+
+    const handleDragEnd = () => {
+        setDraggedNodeId(null);
+        setDropPosition(null);
     };
 
     return (
         <aside className="flex h-full w-64 shrink-0 flex-col border-r border-slate-200 bg-white">
-            {/* Header */}
+            {/* HEADER */}
             <div className="flex h-11 shrink-0 items-center justify-between border-b border-slate-200 px-3">
                 <h2 className="text-sm font-semibold text-slate-800">
                     Navigator
@@ -143,15 +259,21 @@ export function BuilderNavigator({
                 </div>
             </div>
 
-            {/* Tree */}
+            {/* TREE */}
             <div className="min-h-0 flex-1 overflow-y-auto">
                 <NavigatorNode
                     node={document}
                     level={0}
                     selectedNodeId={selectedNodeId}
                     expandedNodes={expandedNodes}
+                    draggedNodeId={draggedNodeId}
+                    dropPosition={dropPosition}
                     onSelect={onSelectNode}
                     onToggle={handleToggle}
+                    onDragStart={handleDragStart}
+                    onDragOver={handleDragOver}
+                    onDrop={handleDrop}
+                    onDragEnd={handleDragEnd}
                 />
             </div>
         </aside>

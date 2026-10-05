@@ -1,15 +1,52 @@
 "use client";
 
-import type { MouseEvent } from "react";
+import type {
+    DragEvent,
+    MouseEvent,
+} from "react";
+
 import type { BuilderNode } from "@/features/builder/types/builder.types";
+
+export type NavigatorDropPosition =
+    | {
+    type: "before";
+    targetNodeId: string;
+}
+    | {
+    type: "after";
+    targetNodeId: string;
+};
 
 interface NavigatorNodeProps {
     node: BuilderNode;
     level: number;
     selectedNodeId: string | null;
     expandedNodes: Set<string>;
+
+    draggedNodeId: string | null;
+    dropPosition: NavigatorDropPosition | null;
+
     onSelect: (nodeId: string) => void;
     onToggle: (nodeId: string) => void;
+
+    onDragStart: (
+        event: DragEvent<HTMLDivElement>,
+        nodeId: string,
+    ) => void;
+
+    onDragOver: (
+        event: DragEvent<HTMLDivElement>,
+        nodeId: string,
+    ) => void;
+
+    onDrop: (
+        event: DragEvent<HTMLDivElement>,
+        nodeId: string,
+    ) => void;
+
+    onDragEnd: (
+        event: DragEvent<HTMLDivElement>,
+    ) => void;
 }
 
 function getNodeLabel(node: BuilderNode): string {
@@ -74,12 +111,28 @@ export function NavigatorNode({
                                   level,
                                   selectedNodeId,
                                   expandedNodes,
+                                  draggedNodeId,
+                                  dropPosition,
                                   onSelect,
                                   onToggle,
+                                  onDragStart,
+                                  onDragOver,
+                                  onDrop,
+                                  onDragEnd,
                               }: NavigatorNodeProps) {
     const hasChildren = node.children.length > 0;
     const isExpanded = expandedNodes.has(node.id);
     const isSelected = selectedNodeId === node.id;
+
+    const isDragged = draggedNodeId === node.id;
+
+    const isBefore =
+        dropPosition?.type === "before" &&
+        dropPosition.targetNodeId === node.id;
+
+    const isAfter =
+        dropPosition?.type === "after" &&
+        dropPosition.targetNodeId === node.id;
 
     const handleClick = (
         event: MouseEvent<HTMLDivElement>,
@@ -97,23 +150,73 @@ export function NavigatorNode({
         onToggle(node.id);
     };
 
+    const handleDragStart = (
+        event: DragEvent<HTMLDivElement>,
+    ) => {
+        event.stopPropagation();
+
+        onDragStart(event, node.id);
+    };
+
+    const handleDragOver = (
+        event: DragEvent<HTMLDivElement>,
+    ) => {
+        event.preventDefault();
+        event.stopPropagation();
+
+        onDragOver(event, node.id);
+    };
+
+    const handleDrop = (
+        event: DragEvent<HTMLDivElement>,
+    ) => {
+        event.preventDefault();
+        event.stopPropagation();
+
+        onDrop(event, node.id);
+    };
+
+    const handleDragEnd = (
+        event: DragEvent<HTMLDivElement>,
+    ) => {
+        event.stopPropagation();
+
+        onDragEnd(event);
+    };
+
     return (
-        <div className="w-full">
+        <div className="relative w-full">
+            {/* BEFORE DROP INDICATOR */}
+            {isBefore && (
+                <div className="pointer-events-none absolute inset-x-2 top-0 z-20 h-0.5 bg-blue-500" />
+            )}
+
             <div
+                draggable
+                onDragStart={handleDragStart}
+                onDragOver={handleDragOver}
+                onDrop={handleDrop}
+                onDragEnd={handleDragEnd}
                 onClick={handleClick}
                 className={[
-                    "group flex h-9 w-full cursor-pointer items-center",
-                    "border-b border-slate-100",
+                    "group flex h-9 w-full cursor-pointer",
+                    "items-center border-b border-slate-100",
                     "text-sm transition-colors",
+
                     isSelected
-                        ? "bg-blue-50 text-blue-700 ring-1 ring-inset ring-blue-200"
+                        ? "bg-blue-50 text-blue-700"
                         : "text-slate-700 hover:bg-slate-50",
+
+                    isDragged
+                        ? "opacity-40"
+                        : "",
                 ].join(" ")}
                 style={{
                     paddingLeft: `${8 + level * 16}px`,
                     paddingRight: "8px",
                 }}
             >
+                {/* EXPAND BUTTON */}
                 <button
                     type="button"
                     onClick={handleToggle}
@@ -122,6 +225,7 @@ export function NavigatorNode({
                         "mr-1 flex h-5 w-5 shrink-0",
                         "items-center justify-center",
                         "rounded text-xs",
+
                         hasChildren
                             ? "text-slate-500 hover:bg-slate-200"
                             : "cursor-default text-transparent",
@@ -134,19 +238,40 @@ export function NavigatorNode({
                         : "•"}
                 </button>
 
+                {/* ICON */}
                 <span className="mr-2 w-5 shrink-0 text-center text-xs">
                     {getNodeIcon(node.type)}
                 </span>
 
+                {/* LABEL */}
                 <span className="min-w-0 flex-1 truncate font-medium">
                     {getNodeLabel(node)}
                 </span>
 
+                {/* TYPE */}
                 <span className="ml-2 hidden text-[10px] uppercase text-slate-400 group-hover:block">
                     {node.type}
                 </span>
+
+                {/* DRAG HANDLE */}
+                <span
+                    className={[
+                        "ml-2 hidden shrink-0",
+                        "cursor-grab text-slate-300",
+                        "group-hover:block",
+                    ].join(" ")}
+                    title="Drag to reorder"
+                >
+                    ⋮⋮
+                </span>
             </div>
 
+            {/* AFTER DROP INDICATOR */}
+            {isAfter && (
+                <div className="pointer-events-none absolute inset-x-2 bottom-0 z-20 h-0.5 bg-blue-500" />
+            )}
+
+            {/* CHILDREN */}
             {hasChildren && isExpanded && (
                 <div>
                     {node.children.map((child) => (
@@ -156,8 +281,14 @@ export function NavigatorNode({
                             level={level + 1}
                             selectedNodeId={selectedNodeId}
                             expandedNodes={expandedNodes}
+                            draggedNodeId={draggedNodeId}
+                            dropPosition={dropPosition}
                             onSelect={onSelect}
                             onToggle={onToggle}
+                            onDragStart={onDragStart}
+                            onDragOver={onDragOver}
+                            onDrop={onDrop}
+                            onDragEnd={onDragEnd}
                         />
                     ))}
                 </div>
